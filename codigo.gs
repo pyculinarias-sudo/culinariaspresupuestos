@@ -140,3 +140,26 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
+/**
+ * Obtiene los productos guardados en la hoja PRODUCTOS
+ */
+function getProductos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja = ss.getSheetByName('PRODUCTOS');
+  if (!hoja) return [];
+  
+  const data = hoja.getDataRange().getValues();
+  const productos = [];
+  
+  // Empezamos desde 1 para saltar los encabezados (fila 0)
+  for (let i = 1; i < data.length; i++) {
+    const fila = data[i];
+    if (fila[1]) { // Verifica que haya un nombre en la columna B (índice 1)
+      productos.push({
+        nombre: fila[1],
+        precio: parseFloat(fila[3]) || 0 // Toma el precio sugerido de la columna D (índice 3)
+      });
+    }
+  }
+  return productos;
+}
