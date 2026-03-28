@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Presupuestos · Culinarias</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .hidden { display: none !important; }
+    .chart-container { position: relative; width: 100%; max-width: 300px; margin-left: auto; margin-right: auto; height: 160px; max-height: 200px; }
+    
+    /* =========================================================
+       ESTILOS PROFESIONALES PARA EL PDF (IMPRESIÓN)
+       ========================================================= */
+    @media print {
+      @page { size: A4; margin: 15mm; }
+      body { background: white !important; color: #1e293b; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      
+      /* Ocultar toda la app interactiva al imprimir */
+      body > *:not(#printView) { display: none !important; }
+      
+      /* Mostrar solo la vista de impresión */
+      #printView { display: block !important; width: 100%; }
+      
+      .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
+      .print-logo-container { width: 90px; height: 90px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
+      .print-logo-container img { width: 100%; height: 100%; object-fit: cover; }
+      .print-logo-placeholder { font-size: 32px; }
+      
+      .print-company-details { text-align: right; }
+      .print-company-name { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 4px; font-family: 'Playfair Display', serif; }
+      .print-company-contact { font-size: 11px; color: #475569; line-height: 1.5; }
+      
+      .print-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+      .print-doc-title { font-size: 32px; font-weight: 300; letter-spacing: -1px; color: #334155; text-transform: uppercase; margin: 0; }
+      .print-meta-table { font-size: 11px; text-align: right; border-collapse: collapse; }
+      .print-meta-table td { padding: 3px 0 3px 15px; }
+      .print-meta-label { font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+      .print-meta-val { font-weight: 600; color: #0f172a; }
+      
+      .print-client-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; display: flex; gap: 20px; }
+      .print-client-col { flex: 1; }
+      .print-client-title { font-size: 9px; text-transform: uppercase; font-weight: 800; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px; }
+      .print-client-data { font-size: 13px; font-weight: 600; color: #0f172a; }
+      
+      .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+      .print-table th { background-color: #f1f5f9; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 9px; padding: 12px 10px; text-align: left; border-bottom: 2px solid #cbd5e1; }
+      .print-table td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; vertical-align: middle; }
+      .print-table th.center, .print-table td.center { text-align: center; }
+      .print-table th.right, .print-table td.right { text-align: right; }
+      .print-item-name { font-weight: 700; color: #0f172a; font-size: 12px; }
+      
+      .print-totals-wrapper { display: flex; justify-content: flex-end; margin-bottom: 30px; }
+      .print-totals { width: 320px; border: 1px solid #e2e8f0; border-radius: 8px; }
+      .print-tot-row { display: flex; justify-content: space-between; padding: 10px 15px; font-size: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+      .print-tot-row strong { color: #0f172a; }
+      .print-tot-final { display: flex; justify-content: space-between; padding: 15px; background-color: #0f172a; color: white; font-size: 16px; font-weight: 800; border-radius: 0 0 7px 7px; align-items: center; }
+      
+      .print-conditions { margin-top: 20px; font-size: 10px; color: #475569; line-height: 1.5; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+      .print-cond-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+      .print-cond-title { font-weight: 800; color: #0f172a; margin-bottom: 6px; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+      
+      .print-footer { margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; font-weight: 500; }
+    }
+  </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.right-5{right:1.25rem}.top-5{top:1.25rem}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-1{margin-top:0.25rem}.mt-12{margin-top:3rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-10{height:2.5rem}.h-20{height:5rem}.h-28{height:7rem}.h-full{height:100%}.max-h-32{max-height:8rem}.max-h-48{max-height:12rem}.min-h-screen{min-height:100vh}.w-1\/3{width:33.333333%}.w-2\/3{width:66.666667%}.w-20{width:5rem}.w-28{width:7rem}.w-\[30\%\]{width:30%}.w-\[40\%\]{width:40%}.w-full{width:100%}.min-w-\[250px\]{min-width:250px}.max-w-4xl{max-width:56rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.resize-none{resize:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-slate-100 > :not([hidden]) ~ :not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249 / var(--tw-divide-opacity, 1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-emerald-100{--tw-border-opacity:1;border-color:rgb(209 250 229 / var(--tw-border-opacity, 1))}.border-emerald-400{--tw-border-opacity:1;border-color:rgb(52 211 153 / var(--tw-border-opacity, 1))}.border-indigo-100{--tw-border-opacity:1;border-color:rgb(224 231 255 / var(--tw-border-opacity, 1))}.border-indigo-200{--tw-border-opacity:1;border-color:rgb(199 210 254 / var(--tw-border-opacity, 1))}.border-indigo-700{--tw-border-opacity:1;border-color:rgb(67 56 202 / var(--tw-border-opacity, 1))}.border-indigo-950{--tw-border-opacity:1;border-color:rgb(30 27 75 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-slate-50{--tw-border-opacity:1;border-color:rgb(248 250 252 / var(--tw-border-opacity, 1))}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229 / var(--tw-bg-opacity, 1))}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245 / var(--tw-bg-opacity, 1))}.bg-emerald-500{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-indigo-50{--tw-bg-opacity:1;background-color:rgb(238 242 255 / var(--tw-bg-opacity, 1))}.bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229 / var(--tw-bg-opacity, 1))}.bg-indigo-900{--tw-bg-opacity:1;background-color:rgb(49 46 129 / var(--tw-bg-opacity, 1))}.bg-red-50{--tw-bg-opacity:1;background-color:rgb(254 242 242 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.object-cover{object-fit:cover}.p-10{padding:2.5rem}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-2{padding-bottom:0.5rem}.pb-3{padding-bottom:0.75rem}.pb-4{padding-bottom:1rem}.pr-1{padding-right:0.25rem}.pt-2{padding-top:0.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-sans{font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-\[10px\]{font-size:10px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.tracking-tight{letter-spacing:-0.025em}.tracking-wide{letter-spacing:0.025em}.tracking-wider{letter-spacing:0.05em}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77 / var(--tw-text-opacity, 1))}.text-emerald-200{--tw-text-opacity:1;color:rgb(167 243 208 / var(--tw-text-opacity, 1))}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129 / var(--tw-text-opacity, 1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105 / var(--tw-text-opacity, 1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87 / var(--tw-text-opacity, 1))}.text-emerald-900{--tw-text-opacity:1;color:rgb(6 78 59 / var(--tw-text-opacity, 1))}.text-indigo-200{--tw-text-opacity:1;color:rgb(199 210 254 / var(--tw-text-opacity, 1))}.text-indigo-300{--tw-text-opacity:1;color:rgb(165 180 252 / var(--tw-text-opacity, 1))}.text-indigo-500{--tw-text-opacity:1;color:rgb(99 102 241 / var(--tw-text-opacity, 1))}.text-indigo-600{--tw-text-opacity:1;color:rgb(79 70 229 / var(--tw-text-opacity, 1))}.text-indigo-700{--tw-text-opacity:1;color:rgb(67 56 202 / var(--tw-text-opacity, 1))}.text-indigo-900{--tw-text-opacity:1;color:rgb(49 46 129 / var(--tw-text-opacity, 1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.underline{-webkit-text-decoration-line:underline;text-decoration-line:underline}.opacity-0{opacity:0}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.hover\:-translate-y-1:hover{--tw-translate-y:-0.25rem;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:scale-\[1\.01\]:hover{--tw-scale-x:1.01;--tw-scale-y:1.01;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:border-indigo-400:hover{--tw-border-opacity:1;border-color:rgb(129 140 248 / var(--tw-border-opacity, 1))}.hover\:bg-emerald-600:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.hover\:bg-emerald-700:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87 / var(--tw-bg-opacity, 1))}.hover\:bg-indigo-700:hover{--tw-bg-opacity:1;background-color:rgb(67 56 202 / var(--tw-bg-opacity, 1))}.hover\:bg-red-100:hover{--tw-bg-opacity:1;background-color:rgb(254 226 226 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-300:hover{--tw-bg-opacity:1;background-color:rgb(203 213 225 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-900:hover{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.hover\:text-indigo-800:hover{--tw-text-opacity:1;color:rgb(55 48 163 / var(--tw-text-opacity, 1))}.hover\:text-slate-600:hover{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:shadow-xl:hover{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.focus\:ring-1:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-indigo-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(99 102 241 / var(--tw-ring-opacity, 1))}@media (min-width: 640px){.sm\:h-36{height:9rem}.sm\:w-36{width:9rem}.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:p-10{padding:2.5rem}.sm\:p-6{padding:1.5rem}.sm\:p-8{padding:2rem}.sm\:text-6xl{font-size:3.75rem;line-height:1}.sm\:text-xl{font-size:1.25rem;line-height:1.75rem}}@media (min-width: 768px){.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}}</style></head>
+<body id="main-body" class="bg-slate-50 min-h-screen text-slate-800 font-sans transition-colors duration-300">
+
+  <div id="toast" class="fixed top-5 right-5 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg font-bold transition-opacity duration-300 opacity-0 pointer-events-none z-50 hidden" style="opacity: 0;">✅ Acceso autorizado</div>
+
+  <div id="app-container" class="max-w-4xl mx-auto p-4 sm:p-6 fade-in">
+      <header class="text-center mb-8 bg-white rounded-3xl p-6 sm:p-10 shadow-xl cursor-pointer flex flex-col items-center justify-center transition-transform hover:scale-[1.01] border border-slate-200" onclick="mostrarPantalla('menu')">
+          <img id="mainMenuLogo" src="" alt="Logo" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full shadow-lg mb-6 border-4 border-slate-50 object-cover" style="display:none;">
+          <div id="mainMenuLogoPlaceholder" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full shadow-lg mb-6 border-4 border-slate-50 bg-slate-100 flex items-center justify-center text-5xl">👨‍🍳</div>
+          <h1 class="text-5xl sm:text-6xl font-black text-slate-900 tracking-tight" style="font-family: 'Playfair Display', serif;">Culinarias</h1>
+          <p class="text-lg sm:text-xl text-slate-600 italic mt-2 font-medium" style="font-family: 'Playfair Display', serif;">Diseñamos tablas, creamos experiencias</p>
+      </header>
+
+      <main id="pantalla-menu" class="fade-in flex flex-col sm:flex-row gap-6 justify-center mt-12 flex-wrap">
+          <button onclick="mostrarPantalla('producto')" class="flex-1 min-w-[250px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">📝</span>
+              <span class="text-2xl font-bold">Crear Producto<br><span class="text-sm font-normal text-indigo-200">Calculadora de Costos</span></span>
+          </button>
+          
+          <button onclick="mostrarPantalla('presupuesto')" class="flex-1 min-w-[250px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">📄</span>
+              <span class="text-2xl font-bold">Generar Presupuesto<br><span class="text-sm font-normal text-emerald-200">Ventas y PDF PRO</span></span>
+          </button>
+
+          <button onclick="verificarAccesoDescargas()" class="flex-1 min-w-[250px] bg-slate-800 hover:bg-slate-900 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">🔐</span>
+              <span class="text-2xl font-bold">Archivos Sistema<br><span class="text-sm font-normal text-slate-300">Área Restringida</span></span>
+          </button>
+      </main>
+
+      <!-- SECCIÓN DESCARGAS RESTRINGIDA -->
+      <section id="pantalla-descargas" class="fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 hidden">
+          <div class="flex justify-between items-center mb-6 border-b pb-4">
+              <div>
+                  <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2"><span>💾</span> Descargar Archivos del Sistema</h2>
+                  <p class="text-slate-500 text-sm mt-1">Acceso autorizado. Descarga el código fuente para Google Sheets y repositorio.</p>
+              </div>
+              <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold border border-slate-200 px-4 py-2 rounded-lg bg-slate-50">Cerrar Área</button>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <!-- FRONTEND HTML -->
+              <div class="p-6 border border-indigo-100 rounded-xl bg-indigo-50 flex flex-col items-center text-center shadow-sm">
+                  <span class="text-4xl mb-3">🎨</span>
+                  <h3 class="font-bold text-lg mb-2 text-indigo-900">Index.html</h3>
+                  <p class="text-xs text-indigo-700 mb-4 h-10">Interfaz visual (Frontend). Todo el diseño y PDF.</p>
+                  <button onclick="descargarFrontend()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg w-full transition-colors shadow-md">Descargar HTML</button>
+              </div>
+
+              <!-- BACKEND GS -->
+              <div class="p-6 border border-emerald-100 rounded-xl bg-emerald-50 flex flex-col items-center text-center shadow-sm">
+                  <span class="text-4xl mb-3">⚙️</span>
+                  <h3 class="font-bold text-lg mb-2 text-emerald-900">Codigo.gs</h3>
+                  <p class="text-xs text-emerald-700 mb-4 h-10">Base de datos y API Backend (Google Apps Script).</p>
+                  <button onclick="descargarBackend()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-lg w-full transition-colors shadow-md">Descargar GS</button>
+              </div>
+
+              <!-- README MD -->
+              <div class="p-6 border border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center text-center shadow-sm">
+                  <span class="text-4xl mb-3">📖</span>
+                  <h3 class="font-bold text-lg mb-2 text-slate-800">README.md</h3>
+                  <p class="text-xs text-slate-500 mb-4 h-10">Instrucciones de instalación paso a paso.</p>
+                  <button onclick="descargarReadme()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-6 rounded-lg w-full transition-colors shadow-md">Descargar MD</button>
+              </div>
+          </div>
+      </section>
+
+      <section id="pantalla-producto" class="hidden fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold text-slate-800">📝 Calculadora de Costos</h2>
+              <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold">← Volver</button>
+          </div>
+          <div class="space-y-8">
+              <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Producto</label>
+                  <input type="text" id="prod-nombre" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej. Tabla Premium...">
+              </div>
+              <div>
+                  <div class="flex justify-between items-end mb-2">
+                      <label class="block text-sm font-medium text-slate-700">Ingredientes</label>
+                      <button onclick="agregarFilaIngrediente()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-md font-medium transition">+ Agregar ingrediente</button>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table class="w-full text-sm text-left">
+                          <thead class="bg-slate-50 text-slate-600">
+                              <tr>
+                                  <th class="p-3">Ingrediente</th>
+                                  <th class="p-3">Cant.</th>
+                                  <th class="p-3">Unidad</th>
+                                  <th class="p-3">Precio Unit. (₲)</th>
+                                  <th class="p-3 text-right">Subtotal</th>
+                                  <th class="p-3"></th>
+                              </tr>
+                          </thead>
+                          <tbody id="tabla-ingredientes" class="divide-y divide-slate-100"></tbody>
+                      </table>
+                  </div>
+              </div>
+              <div>
+                  <div class="flex justify-between items-end mb-2">
+                      <label class="block text-sm font-medium text-slate-700">Costos Directos e Indirectos</label>
+                      <button onclick="agregarFilaCosto()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-md font-medium transition">+ Agregar costo</button>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table class="w-full text-sm text-left">
+                          <thead class="bg-slate-50 text-slate-600">
+                              <tr>
+                                  <th class="p-3">Tipo</th>
+                                  <th class="p-3">Descripción</th>
+                                  <th class="p-3">Monto (₲)</th>
+                                  <th class="p-3"></th>
+                              </tr>
+                          </thead>
+                          <tbody id="tabla-costos" class="divide-y divide-slate-100"></tbody>
+                      </table>
+                  </div>
+              </div>
+              <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                          <label class="block text-sm font-medium text-indigo-900 mb-1">Margen de Ganancia (%)</label>
+                          <input type="number" id="prod-margen" oninput="calcularTotalesProducto()" value="30" class="w-full p-3 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                      </div>
+                      <div class="flex flex-col justify-center space-y-2 text-indigo-900">
+                          <div class="flex justify-between"><span>Costo Total:</span> <span id="res-costo" class="font-bold">₲ 0</span></div>
+                          <div class="flex justify-between"><span>Ganancia Neta:</span> <span id="res-ganancia" class="font-bold text-emerald-600">₲ 0</span></div>
+                          <div class="flex justify-between text-lg border-t border-indigo-200 pt-2 mt-2">
+                              <span class="font-bold">PRECIO SUGERIDO:</span> <span id="res-precio" class="font-bold text-indigo-700">₲ 0</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <button onclick="guardarProductoCostos()" id="btn-guardar-prod" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all text-lg flex justify-center items-center gap-2">
+                  👉 Guardar Producto
+              </button>
+          </div>
+      </section>
+
+      <section id="pantalla-presupuesto" class="hidden fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">📄 Presupuestador de Ventas</h2>
+            <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold">← Volver</button>
+        </div>
+        <div class="space-y-6">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center mb-3 border-b border-slate-200 pb-2">
+              <h3 class="font-bold text-slate-800">👑 Datos de tu Negocio</h3>
+              <span class="text-[10px] text-emerald-600 font-bold bg-emerald-100 px-2 py-1 rounded hidden" id="badgeGuardado">Guardado</span>
+            </div>
+            <div class="flex items-center gap-4 mb-3">
+              <div class="w-20 h-20 rounded-full border-2 border-slate-300 overflow-hidden flex-shrink-0 bg-white flex items-center justify-center cursor-pointer hover:border-indigo-400 transition-colors" onclick="document.getElementById('logoInput').click()">
+                <img id="logoPreview" src="" style="display:none" class="w-full h-full object-cover">
+                <span id="logoPlaceholder" class="text-2xl text-slate-400">📷</span>
+              </div>
+              <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(this)">
+              <div class="flex-1 space-y-2">
+                <input type="text" id="pNegocio" placeholder="Nombre (Ej. Culinarias)" class="w-full p-2 text-sm border rounded outline-none font-bold focus:ring-1 focus:ring-indigo-500">
+                <input type="tel" id="pTel" placeholder="WhatsApp (Ej. 0981...)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <input type="text" id="pInstagram" placeholder="Instagram (@...)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              <input type="text" id="pCiudad" placeholder="Ciudad (Ej. Asunción)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <button onclick="guardarPerfil()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 rounded transition-colors uppercase tracking-wider">Guardar Perfil y Logo</button>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">👤 Datos del Cliente</h3>
+            <input type="text" id="nombreCliente" placeholder="Nombre completo del cliente" class="w-full p-2.5 text-sm border rounded focus:ring-1 focus:ring-indigo-500 outline-none mb-3 font-medium">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Fecha de Entrega</label>
+                <input type="date" id="fechaEntrega" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Personas</label>
+                <input type="number" id="cantPersonas" placeholder="Cantidad" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <input type="text" id="notasPedido" placeholder="Notas de entrega (Ej. Entregar en portería, sin TACC...)" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">🛍️ Agregar Productos</h3>
+            <div class="mb-3">
+              <div class="flex justify-between items-end mb-1">
+                <label class="block text-xs text-slate-500 font-bold">Producto / Detalle</label>
+                <button onclick="toggleModoProducto()" id="btnToggleProd" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-1 rounded transition-colors">+ Escribir manual</button>
+              </div>
+              <select id="selProducto" onchange="seleccionarProducto()" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500"><option value="">⚠️ Sin conexión a Sheets (Añade la URL abajo)</option></select>
+              <input type="text" id="inpProductoCustom" placeholder="Nombre del producto o servicio..." class="hidden w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <div class="flex gap-3 mb-4">
+              <div class="w-[40%]">
+                <label class="block text-xs text-indigo-500 font-bold mb-1">Precio Unit. (₲)</label>
+                <input type="number" id="inpPrecioVenta" placeholder="Ej. 150000" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-700 focus:ring-1 focus:ring-indigo-500">
+              </div>
+              <div class="w-[30%]">
+                <label class="block text-xs text-slate-500 font-bold mb-1">Cantidad</label>
+                <input type="number" id="inpCantidadVenta" placeholder="1" value="1" min="1" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-800 text-center focus:ring-1 focus:ring-indigo-500">
+              </div>
+              <div class="w-[30%]">
+                <label class="block text-xs text-slate-500 font-bold mb-1">Unidad</label>
+                <select id="inpUnidadVenta" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+                  <option value="Unid.">Unid.</option>
+                  <option value="Cajas">Cajas</option>
+                  <option value="Bandejas">Bandejas</option>
+                  <option value="Porciones">Porciones</option>
+                  <option value="Kg">Kg</option>
+                  <option value="Gr">Gr</option>
+                  <option value="L">L</option>
+                  <option value="ml">ml</option>
+                  <option value="Docena">Docena</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="agregarAlPresupuesto()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-colors mb-4 shadow-sm flex items-center justify-center gap-2">
+              <span class="text-lg">+</span> Añadir al Presupuesto
+            </button>
+            <ul id="listaCarrito" class="space-y-2 mb-2 max-h-48 overflow-y-auto pr-1"></ul>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">🚚 Delivery y Extras</h3>
+            <div class="flex gap-2 mb-2">
+              <div class="w-2/3">
+                <input type="text" id="inpExtraDesc" placeholder="Ej. Delivery a Luque" list="listaSugerenciasExtras" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+                <datalist id="listaSugerenciasExtras">
+                  <option value="Delivery"></option>
+                  <option value="Envío Asunción"></option>
+                  <option value="Caja Especial"></option>
+                </datalist>
+              </div>
+              <div class="w-1/3">
+                <input type="number" id="inpExtraMonto" placeholder="Monto (₲)" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <button onclick="agregarExtra()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded text-xs uppercase tracking-wide transition-colors mb-3">+ Añadir Extra</button>
+            <ul id="listaExtras" class="space-y-2 max-h-32 overflow-y-auto pr-1"></ul>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">📋 Condiciones de Venta</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Condiciones Generales</label>
+                <textarea id="txtCondiciones" rows="2" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Presupuesto válido por 48 horas. Los precios y disponibilidad de ingredientes pueden variar si la reserva no es confirmada en el plazo.</textarea>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Forma de Pago</label>
+                <textarea id="txtPago" rows="2" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Seña del 50% para confirmar reserva. Saldo contra entrega vía transferencia bancaria o efectivo.</textarea>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Servicio Incluye</label>
+                <textarea id="txtIncluye" rows="2" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Armado profesional, packaging acorde y detalles de presentación premium.</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-indigo-900 text-white p-5 rounded-xl shadow-lg border border-indigo-950">
+            <div class="flex justify-between items-center border-b border-indigo-700 pb-3 mb-4">
+              <span class="text-sm text-indigo-200 font-medium uppercase tracking-wider">Total a Cobrar</span>
+              <span class="font-black text-3xl text-amber-300" id="resTotal">₲ 0</span>
+            </div>
+            <div class="space-y-3">
+              <button onclick="generarPDF()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-lg shadow-lg transition-colors flex justify-center items-center gap-2 text-base border border-emerald-400">🖨️ Generar PDF Profesional</button>
+              <button onclick="compartirWhatsApp()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-lg transition-colors text-sm border border-slate-700">📱 Enviar Resumen por WhatsApp</button>
+              <button onclick="limpiarTodo()" class="w-full text-indigo-300 hover:text-white text-xs underline mt-2 py-2">Limpiar Presupuesto</button>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+              <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">📊 Mis Ingresos del Mes</h3>
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                  <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
+                      <span class="block text-xs text-slate-500 uppercase font-bold mb-1">Facturado</span>
+                      <span class="block text-xl font-black text-slate-800" id="statFacturado">₲ 0</span>
+                      <span class="block text-xs text-slate-400 mt-1" id="statCotCount">0 cotizaciones</span>
+                  </div>
+                  <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 text-center">
+                      <span class="block text-xs text-emerald-600 uppercase font-bold mb-1">Ganancia Est.</span>
+                      <span class="block text-xl font-black text-emerald-700" id="statGanancia">₲ 0</span>
+                      <span class="block text-xs text-emerald-500 mt-1" id="statMargen">Margen: N/A</span>
+                  </div>
+              </div>
+              <div class="chart-container mb-4">
+                <canvas id="ingresosChart"></canvas>
+              </div>
+              <div class="mb-3">
+                  <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Últimas Cotizaciones</h4>
+                  <ul id="historialList" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></ul>
+              </div>
+              <div class="flex gap-2 mt-4">
+                  <button onclick="exportarResumenWsp()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">📱 Exportar Resumen</button>
+                  <button onclick="limpiarHistorial()" class="w-1/3 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold py-2 rounded-lg transition-colors">🗑️ Borrar</button>
+              </div>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center cursor-pointer" onclick="verificarAccesoWebhook()">
+              <span class="text-xs font-bold text-slate-600">⚙️ Configurar Base de Datos Webhook</span>
+              <span class="text-slate-400">▼</span>
+            </div>
+            <div id="confSheets" class="hidden mt-3 space-y-2">
+              <label class="block text-xs text-slate-500 font-medium">URL del Script:</label>
+              <input type="url" id="inpSheetsURL" placeholder="https://script.google.com/macros/..." class="w-full p-2 text-sm border rounded outline-none" oninput="safeSetLS('CUL_SheetsURL', this.value)">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="printView" class="hidden">
+  <!-- =========================================================
+       VISTA OCULTA PARA IMPRESIÓN (PDF PROFESIONAL)
+       Se coloca FUERA del app-container para evitar conflictos de display
+       ========================================================= -->
+  <div id="printView" class="hidden">
+    <div class="print-header">
+      <div class="print-logo-container">
+        <img id="pdfLogo" src="" alt="Logo" style="display:none">
+        <div id="pdfLogoPlaceholder" class="print-logo-placeholder">👨‍🍳</div>
+      </div>
+      <div class="print-company-details">
+        <div class="print-company-name" id="pdfBizName">Culinarias</div>
+        <div class="print-company-contact" id="pdfBizContact"></div>
+      </div>
+    </div>
+
+    <div class="print-title-row">
+      <h2 class="print-doc-title">PRESUPUESTO</h2>
+      <table class="print-meta-table">
+        <tbody><tr>
+          <td class="print-meta-label">Nº Documento:</td>
+          <td class="print-meta-val" id="pdfCotNum">CUL-001</td>
+        </tr>
+        <tr>
+          <td class="print-meta-label">Fecha Emisión:</td>
+          <td class="print-meta-val" id="pdfFechaHoy"></td>
+        </tr>
+      </tbody></table>
+    </div>
+
+    <div class="print-client-box">
+      <div class="print-client-col">
+        <div class="print-client-title">Presupuesto emitido a:</div>
+        <div class="print-client-data" id="pdfCliente">—</div>
+      </div>
+      <div class="print-client-col">
+        <div class="print-client-title">Fecha de Entrega:</div>
+        <div class="print-client-data" id="pdfEntrega">—</div>
+      </div>
+      <div class="print-client-col">
+        <div class="print-client-title">Personas Est.:</div>
+        <div class="print-client-data" id="pdfPersonas">—</div>
+      </div>
+    </div>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 45%;">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
+          <th class="center" style="width: 15%;">CANTIDAD</th>
+          <th class="center" style="width: 15%;">UNIDAD</th>
+          <th class="right" style="width: 15%;">PRECIO UNIT.</th>
+          <th class="right" style="width: 10%;">SUBTOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="pdfTableBody">
+      </tbody>
+    </table>
+
+    <div class="print-totals-wrapper">
+      <div class="print-totals">
+        <div class="print-tot-row">
+          <span>Subtotal Productos</span>
+          <strong id="pdfSubtotal">₲ 0</strong>
+        </div>
+        <div id="pdfExtrasContainer"></div>
+        <div class="print-tot-final">
+          <span>TOTAL A COBRAR</span>
+          <span id="pdfTotalFinal">₲ 0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="print-conditions">
+      <div class="print-cond-box">
+        <div class="print-cond-title">Condiciones de Presupuesto</div>
+        <div id="pdfCond"></div>
+      </div>
+      <div class="print-cond-box">
+        <div class="print-cond-title">Forma de Pago</div>
+        <div id="pdfPago"></div>
+      </div>
+      <div class="print-cond-box" style="grid-column: span 2;">
+        <div class="print-cond-title">El servicio incluye</div>
+        <div id="pdfInc"></div>
+      </div>
+      <div class="print-cond-box" id="pdfNotasContainer" style="grid-column: span 2; display:none; border-color: #cbd5e1; background: #fff;">
+        <div class="print-cond-title">Notas adicionales del pedido</div>
+        <div id="pdfNotas"></div>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      Documento generado por Sistema de Presupuestos PRO · ¡Gracias por confiar en nuestros servicios!
+    </div>
+  </div>
+
+  <script>
+    // Utilidades seguras de LocalStorage
+    function safeGetLS(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+    function safeSetLS(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+    function safeRemoveLS(key) { try { localStorage.removeItem(key); } catch(e) {} }
+
+    // Validación de acceso a descargas
+    function verificarAccesoDescargas() {
+        const pass = prompt("🔐 Área restringida. Ingresa la contraseña:");
+        if (pass === "Iramain102$") {
+            mostrarPantalla('descargas');
+            mostrarNotificacion("✅ Acceso autorizado");
+        } else if (pass !== null) {
+            mostrarNotificacion("❌ Contraseña incorrecta");
+        }
+    }
+
+    // Ñe'ẽñemi ñehesa'ỹijo Webhook-pe guarã (Validación de contraseña para Webhook)
+    function verificarAccesoWebhook() {
+        const confDiv = document.getElementById('confSheets');
+        // Oñemboty jey hag̃ua oikotevẽ'ỹre ñe'ẽñemi (Cierra sin pedir clave si ya está abierto)
+        if (!confDiv.classList.contains('hidden')) {
+            confDiv.classList.add('hidden');
+            return;
+        }
+        
+        const pass = prompt("🔐 Ñembotyha. Emoinge ñe'ẽñemi (Ingresa la contraseña para configurar Webhook):");
+        if (pass === "Iramain102$") {
+            confDiv.classList.remove('hidden');
+            mostrarNotificacion("✅ Eike katu (Acceso autorizado)");
+        } else if (pass !== null) {
+            mostrarNotificacion("❌ Ñe'ẽñemi vai (Contraseña incorrecta)");
+        }
+    }
+
+    // Descarga de archivos
+    function descargarArchivo(nombre, contenido) {
+      const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+
+    function descargarFrontend() {
+        const clone = document.documentElement.cloneNode(true);
+        // Reseteamos las vistas para que el archivo HTML inicie en el menú limpio
+        clone.querySelector('#pantalla-menu').classList.remove('hidden');
+        clone.querySelector('#pantalla-producto').classList.add('hidden');
+        clone.querySelector('#pantalla-presupuesto').classList.add('hidden');
+        clone.querySelector('#pantalla-descargas').classList.add('hidden');
+        
+        const html = '<!DOCTYPE html>\n<html lang="es">\n' + clone.innerHTML + '\n</html>';
+        descargarArchivo('Index.html', html);
+    }
+
+    function descargarBackend() {
+        const code = `/**
+ * ==========================================
+ * SISTEMA CULINARIAS - BACKEND APPS SCRIPT
+ * ==========================================
+ */
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('🧀 Culinarias PRO')
+    .addItem('Abrir Sistema Web', 'abrirSistema')
+    .addItem('Configurar Base de Datos', 'configurarHojas')
+    .addToUi();
+}
+
+function abrirSistema() {
+  const html = HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Sistema Culinarias PRO')
+    .setWidth(900)
+    .setHeight(600);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema Culinarias PRO');
+}
+
+function doGet(e) {
+  if (e.parameter && e.parameter.accion === 'obtener_productos') {
+    const productos = getProductos();
+    return ContentService.createTextOutput(JSON.stringify(productos))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return HtmlService.createHtmlOutputFromFile('Index')
+      .setTitle('Sistema Culinarias PRO')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function configurarHojas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss.getSheetByName('PRODUCTOS')) {
+    let hProd = ss.insertSheet('PRODUCTOS');
+    hProd.appendRow(['ID', 'NOMBRE', 'COSTO_TOTAL', 'PRECIO_SUGERIDO', 'MARGEN', 'GANANCIA', 'FECHA', 'UNIDAD']);
+    hProd.getRange("A1:H1").setFontWeight("bold").setBackground("#e0e7ff");
+  }
+  if (!ss.getSheetByName('PRESUPUESTOS')) {
+    let hPres = ss.insertSheet('PRESUPUESTOS');
+    hPres.appendRow(['N° Cotización', 'Fecha Emisión', 'Cliente', 'Fecha de Entrega', 'Detalle de Productos', 'Total a Cobrar', 'Estado']);
+    hPres.getRange("A1:G1").setFontWeight("bold").setBackground("#1e1b4b").setFontColor("#ffffff");
+    hPres.setColumnWidth(3, 200);
+    hPres.setColumnWidth(5, 350);
+  }
+  SpreadsheetApp.getUi().alert('✅ Base de datos configurada correctamente.');
+}
+
+function guardarProducto(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let hoja = ss.getSheetByName('PRODUCTOS');
+    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRODUCTOS'); }
+    const idProducto = 'PROD-' + new Date().getTime();
+    const fecha = new Date().toLocaleDateString('es-PY');
+    // Si envían unidad en el futuro, se guarda en la octava columna
+    hoja.appendRow([idProducto, data.nombre, data.costoTotal, data.precioSugerido, data.margen, data.ganancia, fecha, data.unidad || 'Unid.']);
+    return { success: true, message: "Producto guardado exitosamente." };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function guardarPresupuestoVenta(payload) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let hoja = ss.getSheetByName('PRESUPUESTOS');
+    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRESUPUESTOS'); }
+    const fila = hoja.getLastRow();
+    const cotNum = payload.cotNum || ('CUL-' + String(fila).padStart(3, '0'));
+    hoja.appendRow([cotNum, payload.fechaEmision, payload.cliente, payload.fechaEntrega, payload.productos, payload.total, payload.estado]);
+    hoja.getRange("F" + (fila + 1)).setNumberFormat('"₲ "#,##0');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    let result;
+    if (payload.tipo === 'producto') {
+      result = guardarProducto(payload);
+    } else {
+      result = guardarPresupuestoVenta(payload);
+    }
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getProductos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja = ss.getSheetByName('PRODUCTOS');
+  if (!hoja) return [];
+  const data = hoja.getDataRange().getValues();
+  const productos = [];
+  // Empezamos desde 1 para saltar los encabezados
+  for (let i = 1; i < data.length; i++) {
+    const fila = data[i];
+    if (fila[1]) {
+      productos.push({
+        nombre: fila[1],
+        precio: parseFloat(fila[3]) || 0,
+        unidad: fila[7] || 'Unid.'
+      });
+    }
+  }
+  return productos;
+}`;
+        descargarArchivo('Codigo.gs', code);
+    }
+
+    function descargarReadme() {
+        const md = `# Sistema de Presupuestos - Culinarias PRO\n\nEste repositorio contiene el código fuente para el Sistema Integral de Culinarias.\n\n## Instalación\n\n1. En Google Sheets ve a **Extensiones > Apps Script**.\n2. Reemplaza \`Codigo.gs\` con el archivo descargado.\n3. Crea un archivo HTML llamado \`Index.html\` y pega el código correspondiente.\n4. Selecciona \`configurarHojas\` y haz clic en **Ejecutar**.\n5. Haz clic en **Implementar > Nueva implementación** como Aplicación Web para obtener la URL del Webhook.`;
+        descargarArchivo('README.md', md);
+    }
+
+    // NAVEGACIÓN
+    function mostrarPantalla(id) {
+        document.getElementById('pantalla-menu').classList.add('hidden');
+        document.getElementById('pantalla-producto').classList.add('hidden');
+        document.getElementById('pantalla-presupuesto').classList.add('hidden');
+        document.getElementById('pantalla-descargas').classList.add('hidden');
+        document.getElementById('pantalla-' + id).classList.remove('hidden');
+        if(id === 'producto' && document.getElementById('tabla-ingredientes').children.length === 0) {
+            agregarFilaIngrediente(); 
+            agregarFilaCosto(); 
+        }
+        if(id === 'presupuesto') {
+            cargarProductosDesdeSheets();
+            renderIngresos();
+        }
+    }
+
+    // CALCULADORA DE COSTOS DE PRODUCTO
+    function agregarFilaIngrediente() {
+        const tbody = document.getElementById('tabla-ingredientes');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-2"><input type="text" class="w-full p-2 border rounded ing-nombre" placeholder="Ej. Queso Brie"></td>
+            <td class="p-2 w-20"><input type="number" class="w-full p-2 border rounded ing-cant" value="1" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 w-24">
+                <select class="w-full p-2 border rounded ing-unidad">
+                    <option>Gr</option><option>Kg</option><option>L</option><option>ml</option><option>Unid</option><option>Pizca</option><option>Cda</option><option>Paquete</option>
+                </select>
+            </td>
+            <td class="p-2 w-32"><input type="number" class="w-full p-2 border rounded ing-precio" value="0" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 text-right font-medium text-slate-600 ing-subtotal">₲ 0</td>
+            <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calcularTotalesProducto()" class="text-red-500 hover:text-red-700 font-bold">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function agregarFilaCosto() {
+        const tbody = document.getElementById('tabla-costos');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-2 w-32"><select class="w-full p-2 border rounded cos-tipo"><option>Directo</option><option>Indirecto</option></select></td>
+            <td class="p-2"><input type="text" class="w-full p-2 border rounded cos-desc" placeholder="Ej. Bandeja madera"></td>
+            <td class="p-2 w-32"><input type="number" class="w-full p-2 border rounded cos-monto" value="0" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calcularTotalesProducto()" class="text-red-500 hover:text-red-700 font-bold">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcularTotalesProducto() {
+        let costoTotal = 0;
+        document.querySelectorAll('#tabla-ingredientes tr').forEach(tr => {
+            const cant = parseFloat(tr.querySelector('.ing-cant').value) || 0;
+            const precio = parseFloat(tr.querySelector('.ing-precio').value) || 0;
+            const subtotal = cant * precio;
+            tr.querySelector('.ing-subtotal').innerText = formatoMoneda(subtotal);
+            costoTotal += subtotal;
+        });
+        document.querySelectorAll('#tabla-costos tr').forEach(tr => {
+            const monto = parseFloat(tr.querySelector('.cos-monto').value) || 0;
+            costoTotal += monto;
+        });
+        const margen = parseFloat(document.getElementById('prod-margen').value) || 0;
+        const precioSugerido = costoTotal * (1 + (margen / 100));
+        const gananciaNeta = precioSugerido - costoTotal;
+
+        document.getElementById('res-costo').innerText = formatoMoneda(costoTotal);
+        document.getElementById('res-ganancia').innerText = formatoMoneda(gananciaNeta);
+        document.getElementById('res-precio').innerText = formatoMoneda(precioSugerido);
+    }
+
+    function guardarProductoCostos() {
+        const btn = document.getElementById('btn-guardar-prod');
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '⏳ Guardando...';
+        btn.disabled = true;
+
+        const nombre = document.getElementById('prod-nombre').value;
+        if(!nombre) {
+            mostrarNotificacion('Por favor, ingresa el nombre del producto');
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+            return;
+        }
+
+        const ingredientes = [];
+        document.querySelectorAll('#tabla-ingredientes tr').forEach(tr => {
+            const nom = tr.querySelector('.ing-nombre').value;
+            if(nom) ingredientes.push({ nombre: nom, cantidad: parseFloat(tr.querySelector('.ing-cant').value) || 0, unidad: tr.querySelector('.ing-unidad').value, precio: parseFloat(tr.querySelector('.ing-precio').value) || 0, subtotal: parseFloat(tr.querySelector('.ing-subtotal').innerText.replace(/[^\d]/g, '')) });
+        });
+
+        const costos = [];
+        document.querySelectorAll('#tabla-costos tr').forEach(tr => {
+            const desc = tr.querySelector('.cos-desc').value;
+            if(desc) costos.push({ tipo: tr.querySelector('.cos-tipo').value, descripcion: desc, monto: parseFloat(tr.querySelector('.cos-monto').value) || 0 });
+        });
+
+        const data = { tipo: 'producto', nombre: nombre, ingredientes: ingredientes, costos: costos, margen: document.getElementById('prod-margen').value, costoTotal: parseFloat(document.getElementById('res-costo').innerText.replace(/[^\d]/g, '')), ganancia: parseFloat(document.getElementById('res-ganancia').innerText.replace(/[^\d]/g, '')), precioSugerido: parseFloat(document.getElementById('res-precio').innerText.replace(/[^\d]/g, '')) };
+
+        if(typeof google !== 'undefined') {
+            google.script.run.withSuccessHandler(function(response) {
+                if(response.success) { 
+                    mostrarNotificacion('✅ ' + response.message); 
+                    document.getElementById('prod-nombre').value = ''; 
+                    document.getElementById('tabla-ingredientes').innerHTML = ''; 
+                    document.getElementById('tabla-costos').innerHTML = ''; 
+                    mostrarPantalla('menu'); 
+                } else { 
+                    mostrarNotificacion('❌ Error: ' + response.message); 
+                }
+                btn.innerHTML = textoOriginal; btn.disabled = false;
+            }).guardarProducto(data);
+        } else {
+            const webhookURL = document.getElementById('inpSheetsURL').value || safeGetLS('CUL_SheetsURL');
+            if (webhookURL && webhookURL.includes('script.google.com')) {
+                fetch(webhookURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) })
+                .then(() => {
+                    mostrarNotificacion('✅ Producto guardado en Sheets vía Webhook');
+                    document.getElementById('prod-nombre').value = ''; 
+                    document.getElementById('tabla-ingredientes').innerHTML = ''; 
+                    document.getElementById('tabla-costos').innerHTML = ''; 
+                    mostrarPantalla('menu');
+                    btn.innerHTML = textoOriginal; btn.disabled = false;
+                }).catch(e => {
+                    mostrarNotificacion('❌ Error de conexión con Webhook');
+                    btn.innerHTML = textoOriginal; btn.disabled = false;
+                });
+            } else {
+                mostrarNotificacion('⚠️ Sin URL configurada (Modo Local)');
+                setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 1000);
+            }
+        }
+    }
+
+    // PRESUPUESTADOR DE VENTAS
+    let logoBase64 = '';
+    let carritoProductos = [];
+    let carritoExtras = [];
+    let modoCustom = false;
+    let ingresosChart = null;
+    let PRODUCTOS_BASE = [];
+
+    window.onload = function() {
+      document.getElementById('fechaEntrega').value = new Date().toISOString().split('T')[0];
+      cargarPerfil();
+      document.getElementById('inpSheetsURL').value = safeGetLS('CUL_SheetsURL') || '';
+      cargarProductosDesdeSheets();
+    };
+
+    function cargarProductosDesdeSheets() {
+      const select = document.getElementById('selProducto');
+      select.innerHTML = '<option value="">⏳ Cargando catálogo...</option>';
+
+      if (typeof google !== 'undefined') {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            PRODUCTOS_BASE = data;
+            mostrarCatalogo(select);
+          })
+          .withFailureHandler(function(error) {
+            select.innerHTML = '<option value="">❌ Error al cargar base de datos</option>';
+            console.error(error);
+          })
+          .getProductos();
+      } else {
+        const webhookURL = document.getElementById('inpSheetsURL').value || safeGetLS('CUL_SheetsURL');
+        if (webhookURL && webhookURL.includes('script.google.com')) {
+          const urlFetch = webhookURL + (webhookURL.includes('?') ? '&' : '?') + 'accion=obtener_productos';
+          fetch(urlFetch)
+            .then(res => res.json())
+            .then(data => {
+              if(Array.isArray(data)) {
+                PRODUCTOS_BASE = data;
+                mostrarCatalogo(select);
+              } else {
+                select.innerHTML = '<option value="">❌ Formato de datos incorrecto</option>';
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              select.innerHTML = '<option value="">⚠️ Error de conexión (Revisa el Webhook)</option>';
+            });
+        } else {
+          select.innerHTML = '<option value="">⚠️ Sin conexión a Sheets (Añade la URL abajo)</option>';
+        }
+      }
+    }
+
+    function mostrarCatalogo(select) {
+        select.innerHTML = '<option value="">Selecciona una tabla...</option>';
+        if (PRODUCTOS_BASE && PRODUCTOS_BASE.length === 0) {
+          select.innerHTML = '<option value="">No hay productos en tu base de datos</option>';
+        } else if (PRODUCTOS_BASE) {
+          PRODUCTOS_BASE.forEach((prod, i) => {
+            select.innerHTML += `<option value="${i}">${prod.nombre} - ${formatoMoneda(prod.precio)}</option>`;
+          });
+        }
+    }
+
+    function handleLogoUpload(input) {
+      const file = input.files[0]; 
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => { 
+        logoBase64 = e.target.result; 
+        document.getElementById('logoPreview').src = logoBase64;
+        document.getElementById('logoPreview').style.display = 'block';
+        document.getElementById('logoPlaceholder').style.display = 'none';
+        document.getElementById('pdfLogo').src = logoBase64;
+        document.getElementById('pdfLogo').style.display = 'block';
+        document.getElementById('pdfLogoPlaceholder').style.display = 'none';
+        guardarPerfil();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function guardarPerfil() {
+      const perfil = {
+        negocio: document.getElementById('pNegocio').value.trim(),
+        tel: document.getElementById('pTel').value.trim(),
+        instagram: document.getElementById('pInstagram').value.trim(),
+        ciudad: document.getElementById('pCiudad').value.trim(),
+        logo: logoBase64
+      };
+      safeSetLS('CUL_PerfilVendedor', JSON.stringify(perfil));
+      const badge = document.getElementById('badgeGuardado');
+      badge.classList.remove('hidden');
+      setTimeout(() => badge.classList.add('hidden'), 2000);
+    }
+
+    function cargarPerfil() {
+      const raw = safeGetLS('CUL_PerfilVendedor');
+      if (raw) {
+        const p = JSON.parse(raw);
+        document.getElementById('pNegocio').value = p.negocio || '';
+        document.getElementById('pTel').value = p.tel || '';
+        document.getElementById('pInstagram').value = p.instagram || '';
+        document.getElementById('pCiudad').value = p.ciudad || '';
+        if (p.logo) {
+          logoBase64 = p.logo;
+          document.getElementById('logoPreview').src = logoBase64;
+          document.getElementById('logoPreview').style.display = 'block';
+          document.getElementById('logoPlaceholder').style.display = 'none';
+          document.getElementById('pdfLogo').src = logoBase64;
+          document.getElementById('pdfLogo').style.display = 'block';
+          document.getElementById('pdfLogoPlaceholder').style.display = 'none';
+        }
+      }
+    }
+
+    function toggleModoProducto() {
+      modoCustom = !modoCustom;
+      const sel = document.getElementById('selProducto');
+      const inp = document.getElementById('inpProductoCustom');
+      const btn = document.getElementById('btnToggleProd');
+
+      if (modoCustom) {
+        sel.classList.add('hidden');
+        inp.classList.remove('hidden');
+        btn.innerText = "📋 Ver Catálogo";
+        document.getElementById('inpPrecioVenta').value = "";
+        inp.focus();
+      } else {
+        sel.classList.remove('hidden');
+        inp.classList.add('hidden');
+        btn.innerText = "+ Escribir manual";
+        seleccionarProducto();
+      }
+    }
+
+    function seleccionarProducto() {
+      const idx = document.getElementById('selProducto').value;
+      if (idx !== "") {
+        document.getElementById('inpPrecioVenta').value = PRODUCTOS_BASE[idx].precio;
+        document.getElementById('inpUnidadVenta').value = PRODUCTOS_BASE[idx].unidad || 'Unid.';
+        document.getElementById('inpCantidadVenta').focus();
+      } else {
+        document.getElementById('inpPrecioVenta').value = "";
+      }
+    }
+
+    function agregarAlPresupuesto() {
+      let nombre = "";
+      if (modoCustom) {
+        nombre = document.getElementById('inpProductoCustom').value.trim();
+        if (!nombre) return mostrarNotificacion('Escribe el nombre del producto.');
+      } else {
+        const idx = document.getElementById('selProducto').value;
+        if (idx === "") return mostrarNotificacion('Selecciona un producto.');
+        nombre = PRODUCTOS_BASE[idx].nombre;
+      }
+
+      const precio = parseFloat(document.getElementById('inpPrecioVenta').value);
+      const cantidad = parseFloat(document.getElementById('inpCantidadVenta').value);
+      const unidad = document.getElementById('inpUnidadVenta').value;
+
+      if (isNaN(precio) || precio < 0 || isNaN(cantidad) || cantidad <= 0) return mostrarNotificacion('Precio o cantidad inválida.');
+
+      carritoProductos.push({ nombre, precio, cantidad, unidad, subtotal: precio * cantidad });
+
+      if (modoCustom) {
+        document.getElementById('inpProductoCustom').value = "";
+        document.getElementById('inpPrecioVenta').value = "";
+      } else {
+        document.getElementById('selProducto').value = "";
+        document.getElementById('inpPrecioVenta').value = "";
+      }
+      document.getElementById('inpCantidadVenta').value = 1;
+      actualizarListasUI();
+    }
+
+    function eliminarProducto(index) {
+      carritoProductos.splice(index, 1);
+      actualizarListasUI();
+    }
+
+    function agregarExtra() {
+      const desc = document.getElementById('inpExtraDesc').value.trim();
+      const monto = parseFloat(document.getElementById('inpExtraMonto').value);
+
+      if (!desc || isNaN(monto) || monto < 0) return mostrarNotificacion('Extra inválido.');
+      carritoExtras.push({ descripcion: desc, monto: monto });
+      document.getElementById('inpExtraDesc').value = "";
+      document.getElementById('inpExtraMonto').value = "";
+      actualizarListasUI();
+    }
+
+    function eliminarExtra(index) {
+      carritoExtras.splice(index, 1);
+      actualizarListasUI();
+    }
+
+    function actualizarListasUI() {
+      const ulProd = document.getElementById('listaCarrito');
+      ulProd.innerHTML = '';
+      let subtotalProd = 0;
+      carritoProductos.forEach((p, i) => {
+        subtotalProd += p.subtotal;
+        ulProd.innerHTML += `
+          <li class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <div class="flex flex-col">
+              <span class="font-bold text-slate-800">${p.nombre}</span>
+              <span class="text-slate-500">${p.cantidad} ${p.unidad} x ${formatoMoneda(p.precio)}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-indigo-700">${formatoMoneda(p.subtotal)}</span>
+              <button onclick="eliminarProducto(${i})" class="text-red-400 font-bold hover:bg-red-100 w-5 h-5 rounded-full flex items-center justify-center">✕</button>
+            </div>
+          </li>`;
+      });
+
+      const ulExt = document.getElementById('listaExtras');
+      ulExt.innerHTML = '';
+      let totalExt = 0;
+      carritoExtras.forEach((e, i) => {
+        totalExt += e.monto;
+        ulExt.innerHTML += `
+          <li class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <span class="font-semibold text-slate-700">${e.descripcion}</span>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-slate-700">${formatoMoneda(e.monto)}</span>
+              <button onclick="eliminarExtra(${i})" class="text-red-400 font-bold hover:bg-red-100 w-5 h-5 rounded-full flex items-center justify-center">✕</button>
+            </div>
+          </li>`;
+      });
+
+      document.getElementById('resTotal').innerText = formatoMoneda(subtotalProd + totalExt);
+    }
+
+    function getHistorial() { try { return JSON.parse(safeGetLS('CUL_Historial') || '[]'); } catch(e) { return []; } }
+    function guardarEnHistorial(entry) { const h = getHistorial(); h.unshift(entry); if (h.length > 100) h.length = 100; safeSetLS('CUL_Historial', JSON.stringify(h)); }
+    function limpiarHistorial() {
+      if (!confirm('¿Borrar historial de ingresos locales?')) return;
+      safeRemoveLS('CUL_Historial'); renderIngresos(); mostrarNotificacion('Historial borrado.');
+    }
+
+    function renderIngresos() {
+      const elFacturado = document.getElementById('statFacturado');
+      if (!elFacturado) return; 
+
+      const h = getHistorial();
+      const ahora = new Date();
+      const mesActual = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0');
+
+      let facturadoMes = 0, cotMes = 0, gananciaMes = 0;
+      h.forEach(e => {
+        if (e.fechaGenerado && e.fechaGenerado.startsWith(mesActual)) { 
+            facturadoMes += e.totalVenta || 0; 
+            gananciaMes += (e.totalVenta * 0.3) || 0; 
+            cotMes++; 
+        }
+      });
+
+      elFacturado.textContent = formatoMoneda(facturadoMes);
+      document.getElementById('statCotCount').textContent  = cotMes + (cotMes === 1 ? ' cotización' : ' cotizaciones');
+      document.getElementById('statGanancia').textContent  = formatoMoneda(gananciaMes);
+      document.getElementById('statMargen').textContent  = 'Margen Est.: 30%';
+      
+      const ctx = document.getElementById('ingresosChart');
+      if(ctx) {
+        if(ingresosChart) ingresosChart.destroy();
+        ingresosChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Costos', 'Ganancia'],
+                datasets: [{
+                    data: [facturadoMes - gananciaMes, gananciaMes],
+                    backgroundColor: ['#cbd5e1', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter' } } } }
+            }
+        });
+      }
+
+      const listEl = document.getElementById('historialList');
+      if (listEl) {
+          const ultimos = h.slice(0, 10);
+          if (ultimos.length === 0) {
+            listEl.innerHTML = '<div class="text-[10px] text-slate-400 text-center py-2">Aún no hay cotizaciones en este dispositivo.</div>';
+          } else {
+            listEl.innerHTML = ultimos.map(e => {
+              const fecha = e.fechaGenerado ? e.fechaGenerado.split('T')[0] : '—';
+              return `<li class="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs border border-slate-100">
+                  <div class="flex flex-col"><span class="font-bold text-slate-700">${e.cotNum}</span> <span class="text-[10px] text-slate-500 truncate w-32">${e.cliente || '—'}</span></div>
+                  <div class="font-black text-emerald-600">${formatoMoneda(e.totalVenta || 0)}</div>
+              </li>`;
+            }).join('');
+          }
+      }
+    }
+
+    function generarPDF() {
+      if (carritoProductos.length === 0) return mostrarNotificacion('Agrega un producto primero para generar el PDF.');
+
+      const cliente = document.getElementById('nombreCliente').value.trim() || 'Cliente No Especificado';
+      const fHoy = new Date().toLocaleDateString('es-PY');
+      const fEntRaw = document.getElementById('fechaEntrega').value;
+      const fEnt = fEntRaw ? new Date(fEntRaw + 'T12:00:00').toLocaleDateString('es-PY') : 'No definida';
+      const personas = document.getElementById('cantPersonas').value || '—';
+      const notas = document.getElementById('notasPedido').value.trim();
+      const negocio = document.getElementById('pNegocio').value || 'Culinarias';
+
+      document.getElementById('pdfBizName').innerText = negocio;
+      
+      const arrContacto = [];
+      const tel = document.getElementById('pTel').value;
+      const insta = document.getElementById('pInstagram').value;
+      const ciu = document.getElementById('pCiudad').value;
+      if(tel) arrContacto.push('📱 ' + tel);
+      if(insta) arrContacto.push('📷 ' + insta);
+      if(ciu) arrContacto.push('📍 ' + ciu);
+      
+      document.getElementById('pdfBizContact').innerHTML = arrContacto.join('<br>') || 'Diseñamos tablas, creamos experiencias';
+
+      const cotNum = 'CUL-' + String(parseInt(safeGetLS('CUL_NumSec') || '0') + 1).padStart(3, '0');
+      document.getElementById('pdfCotNum').innerText = cotNum;
+      document.getElementById('pdfFechaHoy').innerText = fHoy;
+
+      document.getElementById('pdfCliente').innerText = cliente;
+      document.getElementById('pdfEntrega').innerText = fEnt;
+      document.getElementById('pdfPersonas').innerText = personas;
+
+      let subtotal = 0;
+      let filasHtml = '';
+      carritoProductos.forEach(p => {
+        subtotal += p.subtotal;
+        filasHtml += `
+          <tr>
+            <td class="print-item-name">${p.nombre}</td>
+            <td class="center">${p.cantidad}</td>
+            <td class="center">${p.unidad}</td>
+            <td class="right">${formatoMoneda(p.precio)}</td>
+            <td class="right"><strong>${formatoMoneda(p.subtotal)}</strong></td>
+          </tr>`;
+      });
+      document.getElementById('pdfTableBody').innerHTML = filasHtml;
+      document.getElementById('pdfSubtotal').innerText = formatoMoneda(subtotal);
+
+      let htmlExtras = '';
+      let totExt = 0;
+      carritoExtras.forEach(e => {
+        totExt += e.monto;
+        htmlExtras += `
+          <div class="print-tot-row">
+            <span>${e.descripcion}</span>
+            <span>${formatoMoneda(e.monto)}</span>
+          </div>`;
+      });
+      document.getElementById('pdfExtrasContainer').innerHTML = htmlExtras;
+      
+      const granTotal = subtotal + totExt;
+      document.getElementById('pdfTotalFinal').innerText = formatoMoneda(granTotal);
+
+      document.getElementById('pdfCond').innerText = document.getElementById('txtCondiciones').value;
+      document.getElementById('pdfPago').innerText = document.getElementById('txtPago').value;
+      document.getElementById('pdfInc').innerText = document.getElementById('txtIncluye').value;
+
+      if(notas) {
+        document.getElementById('pdfNotasContainer').style.display = 'block';
+        document.getElementById('pdfNotas').innerText = notas;
+      } else {
+        document.getElementById('pdfNotasContainer').style.display = 'none';
+      }
+
+      safeSetLS('CUL_NumSec', String(parseInt(safeGetLS('CUL_NumSec') || '0') + 1));
+      
+      guardarEnGoogleSheets(cotNum, cliente, fEnt, granTotal);
+      guardarEnHistorial({ cotNum, cliente, fechaGenerado: new Date().toISOString(), totalVenta: granTotal });
+      renderIngresos();
+
+      setTimeout(() => { window.print(); }, 500);
+    }
+
+    function guardarEnGoogleSheets(cotNum, cliente, fechaEntrega, total) {
+      const payload = {
+        tipo: 'venta',
+        cotNum: cotNum,
+        fechaEmision: new Date().toLocaleDateString('es-PY'),
+        cliente: cliente,
+        fechaEntrega: fechaEntrega,
+        productos: carritoProductos.map(p => `${p.cantidad} ${p.unidad} x ${p.nombre}`).join(' | '),
+        total: total,
+        estado: 'Presupuestado'
+      };
+
+      if (typeof google !== 'undefined') {
+        google.script.run.guardarPresupuestoVenta(payload);
+      } else {
+        const webhookURL = document.getElementById('inpSheetsURL').value || safeGetLS('CUL_SheetsURL');
+        if (webhookURL) {
+          fetch(webhookURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).catch(e => console.log(e));
+        }
+      }
+    }
+
+    function compartirWhatsApp() {
+      if (carritoProductos.length === 0) return mostrarNotificacion('Presupuesto vacío.');
+      const negocio = document.getElementById('pNegocio').value || 'Culinarias';
+      const cliente = document.getElementById('nombreCliente').value || 'Cliente';
+      
+      let mensaje = `Hola *${cliente}*, aquí tienes tu presupuesto de *${negocio}*:\n\n`;
+      let total = 0;
+      carritoProductos.forEach(p => { total += p.subtotal; mensaje += `🔸 ${p.cantidad} ${p.unidad} x ${p.nombre} -> ${formatoMoneda(p.subtotal)}\n`; });
+      if (carritoExtras.length > 0) {
+        mensaje += `\n*Extras:*\n`;
+        carritoExtras.forEach(e => { total += e.monto; mensaje += `🔹 ${e.descripcion} -> ${formatoMoneda(e.monto)}\n`; });
+      }
+      mensaje += `\n💰 *TOTAL: ${formatoMoneda(total)}*\n\n`;
+      mensaje += `*Forma de Pago:* ${document.getElementById('txtPago').value}\n`;
+      mensaje += `*Condiciones:* ${document.getElementById('txtCondiciones').value}\n`;
+      
+      window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
+
+    function exportarResumenWsp() {
+        const h = getHistorial(); 
+        const ahora = new Date(); 
+        const mesActual = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0'); 
+        const nombreMes = ahora.toLocaleDateString('es-PY', { month: 'long', year: 'numeric' });
+        
+        const delMes = h.filter(e => e.fechaGenerado && e.fechaGenerado.startsWith(mesActual)); 
+        const facturado = delMes.reduce((s, e) => s + (e.totalVenta || 0), 0); 
+        const p = getPerfil();
+        
+        const lines = []; 
+        lines.push(`🍽️ *RESUMEN DE VENTAS — ${nombreMes.toUpperCase()}*`); 
+        if (p.negocio) lines.push(`✨ ${p.negocio}`); 
+        lines.push('');
+        lines.push(`📋 *Cotizaciones:* ${delMes.length}`); 
+        lines.push(`💰 *Total Presupuestado:* ${formatoMoneda(facturado)}`); 
+        lines.push('');
+        if (delMes.length > 0) { 
+            lines.push('*Detalle de Cotizaciones:*'); 
+            delMes.forEach(e => lines.push(`  • ${e.cotNum} · ${e.cliente || '—'} → ${formatoMoneda(e.totalVenta)}`)); 
+            lines.push(''); 
+        }
+        window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    }
+
+    function limpiarTodo() {
+      if(!confirm('¿Borrar todo el presupuesto actual?')) return;
+      carritoProductos = []; carritoExtras = [];
+      document.getElementById('nombreCliente').value = ""; document.getElementById('cantPersonas').value = ""; document.getElementById('notasPedido').value = "";
+      actualizarListasUI();
+    }
+
+    function formatoMoneda(valor) { return '₲ ' + Math.round(valor).toLocaleString('es-ES'); }
+    function mostrarNotificacion(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.remove('hidden'); t.style.opacity = '1';
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.classList.add('hidden'), 300); }, 3000);
+    }
+  </script>
+
+</div></div></body>
+</html>
