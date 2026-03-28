@@ -1,0 +1,910 @@
+<!-- Application Structure Plan: Single-page application acting as a budgeting tool for a catering business. Includes profile management, product creation, budget generation, and local state management for offline preview. Features a dedicated download section to retrieve the backend and documentation files. Includes a chart for financial overview. -->
+<!-- Visualization & Content Choices: Interactive forms for budget input, dynamic receipt generation, printable PDF view. Chart.js doughnut chart for profit vs cost visualization. Vanilla JS for state, Tailwind for styling. No SVG or Mermaid used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Presupuestos · Culinarias</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .hidden { display: none !important; }
+    .chart-container { position: relative; width: 100%; max-width: 300px; margin-left: auto; margin-right: auto; height: 160px; max-height: 200px; }
+    @media print {
+      body > *:not(#printView) { display: none !important; }
+      #printView { display: block !important; background: white; padding: 0; color: #000; font-family: 'Inter', sans-serif; }
+      .pdf-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1e1b4b; padding-bottom: 20px; margin-bottom: 20px; }
+      .pdf-logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+      .pdf-biz-info { text-align: right; }
+      .pdf-title { font-size: 28px; font-weight: 900; color: #1e1b4b; margin: 0; letter-spacing: -0.5px; font-family: 'Playfair Display', serif; }
+      .pdf-subtitle { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+      .pdf-section-title { font-size: 14px; font-weight: 800; color: #1e1b4b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; margin-top: 25px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px; margin-bottom: 20px; }
+      .pdf-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 2px; }
+      .pdf-val { font-weight: 600; color: #0f172a; }
+      .pdf-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+      .pdf-table th { background-color: #f1f5f9; padding: 10px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1; }
+      .pdf-table td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; }
+      .pdf-table th.right, .pdf-table td.right { text-align: right; }
+      .pdf-table th.center, .pdf-table td.center { text-align: center; }
+      .pdf-totales { width: 350px; float: right; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 30px; }
+      .pdf-tot-row { display: flex; justify-content: space-between; padding: 10px 15px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+      .pdf-tot-final { display: flex; justify-content: space-between; padding: 15px; background-color: #1e1b4b; color: white; font-size: 18px; font-weight: 900; }
+      .pdf-condiciones { clear: both; background-color: #f8fafc; padding: 15px; border-radius: 8px; font-size: 11px; color: #475569; }
+      .pdf-condiciones strong { color: #1e1b4b; display: block; margin-bottom: 3px; font-size: 12px; }
+      .pdf-footer { margin-top: 40px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+    }
+  </style>
+</head>
+<body id="main-body" class="bg-slate-50 min-h-screen text-slate-800 font-sans transition-colors duration-300">
+
+  <div id="toast" class="fixed top-5 right-5 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg font-bold transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+      Mensaje
+  </div>
+
+  <div id="app-container" class="max-w-4xl mx-auto p-4 sm:p-6 fade-in">
+      <header class="text-center mb-8 bg-white rounded-3xl p-6 sm:p-10 shadow-xl cursor-pointer flex flex-col items-center justify-center transition-transform hover:scale-[1.01] border border-slate-200" onclick="mostrarPantalla('menu')">
+          <img id="mainMenuLogo" src="" alt="Logo" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full shadow-lg mb-6 border-4 border-slate-50 object-cover" style="display:none;">
+          <div id="mainMenuLogoPlaceholder" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full shadow-lg mb-6 border-4 border-slate-50 bg-slate-100 flex items-center justify-center text-5xl">👨‍🍳</div>
+          <h1 class="text-5xl sm:text-6xl font-black text-slate-900 tracking-tight" style="font-family: 'Playfair Display', serif;">Culinarias</h1>
+          <p class="text-lg sm:text-xl text-slate-600 italic mt-2 font-medium" style="font-family: 'Playfair Display', serif;">Diseñamos tablas, creamos experiencias</p>
+      </header>
+
+      <main id="pantalla-menu" class="fade-in flex flex-col sm:flex-row gap-6 justify-center mt-12 flex-wrap">
+          <button onclick="mostrarPantalla('producto')" class="flex-1 min-w-[250px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">📝</span>
+              <span class="text-2xl font-bold">Crear Producto<br><span class="text-sm font-normal text-indigo-200">Calculadora de Costos</span></span>
+          </button>
+          
+          <button onclick="mostrarPantalla('presupuesto')" class="flex-1 min-w-[250px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">📄</span>
+              <span class="text-2xl font-bold">Generar Presupuesto<br><span class="text-sm font-normal text-emerald-200">Ventas y PDF</span></span>
+          </button>
+
+          <button onclick="mostrarPantalla('descargas')" class="flex-1 min-w-[250px] bg-slate-800 hover:bg-slate-900 text-white rounded-2xl p-10 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex flex-col items-center justify-center gap-4">
+              <span class="text-4xl">💾</span>
+              <span class="text-2xl font-bold">Descargar Archivos<br><span class="text-sm font-normal text-slate-300">Backend y README</span></span>
+          </button>
+      </main>
+
+      <section id="pantalla-descargas" class="hidden fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold text-slate-800">💾 Descargar Archivos del Sistema</h2>
+              <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold">← Volver</button>
+          </div>
+          <p class="text-slate-600 mb-8">Descarga los archivos necesarios para instalar el sistema en tu repositorio o Google Sheets.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="p-6 border border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center text-center">
+                  <span class="text-4xl mb-3">⚙️</span>
+                  <h3 class="font-bold text-lg mb-2">Codigo.gs</h3>
+                  <p class="text-xs text-slate-500 mb-4">Script de backend para Google Sheets.</p>
+                  <button onclick="descargarBackend()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg w-full">Descargar .gs</button>
+              </div>
+              <div class="p-6 border border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center text-center">
+                  <span class="text-4xl mb-3">📖</span>
+                  <h3 class="font-bold text-lg mb-2">README.md</h3>
+                  <p class="text-xs text-slate-500 mb-4">Instrucciones de instalación.</p>
+                  <button onclick="descargarReadme()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-lg w-full">Descargar .md</button>
+              </div>
+          </div>
+      </section>
+
+      <section id="pantalla-producto" class="hidden fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold text-slate-800">📝 Calculadora de Costos</h2>
+              <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold">← Volver</button>
+          </div>
+          <div class="space-y-8">
+              <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Producto</label>
+                  <input type="text" id="prod-nombre" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej. Tabla Premium...">
+              </div>
+              <div>
+                  <div class="flex justify-between items-end mb-2">
+                      <label class="block text-sm font-medium text-slate-700">Ingredientes</label>
+                      <button onclick="agregarFilaIngrediente()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-md font-medium transition">+ Agregar ingrediente</button>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table class="w-full text-sm text-left">
+                          <thead class="bg-slate-50 text-slate-600">
+                              <tr>
+                                  <th class="p-3">Ingrediente</th>
+                                  <th class="p-3">Cant.</th>
+                                  <th class="p-3">Unidad</th>
+                                  <th class="p-3">Precio Unit. (₲)</th>
+                                  <th class="p-3 text-right">Subtotal</th>
+                                  <th class="p-3"></th>
+                              </tr>
+                          </thead>
+                          <tbody id="tabla-ingredientes" class="divide-y divide-slate-100"></tbody>
+                      </table>
+                  </div>
+              </div>
+              <div>
+                  <div class="flex justify-between items-end mb-2">
+                      <label class="block text-sm font-medium text-slate-700">Costos Directos e Indirectos</label>
+                      <button onclick="agregarFilaCosto()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-md font-medium transition">+ Agregar costo</button>
+                  </div>
+                  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table class="w-full text-sm text-left">
+                          <thead class="bg-slate-50 text-slate-600">
+                              <tr>
+                                  <th class="p-3">Tipo</th>
+                                  <th class="p-3">Descripción</th>
+                                  <th class="p-3">Monto (₲)</th>
+                                  <th class="p-3"></th>
+                              </tr>
+                          </thead>
+                          <tbody id="tabla-costos" class="divide-y divide-slate-100"></tbody>
+                      </table>
+                  </div>
+              </div>
+              <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                          <label class="block text-sm font-medium text-indigo-900 mb-1">Margen de Ganancia (%)</label>
+                          <input type="number" id="prod-margen" oninput="calcularTotalesProducto()" value="30" class="w-full p-3 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                      </div>
+                      <div class="flex flex-col justify-center space-y-2 text-indigo-900">
+                          <div class="flex justify-between"><span>Costo Total:</span> <span id="res-costo" class="font-bold">₲ 0</span></div>
+                          <div class="flex justify-between"><span>Ganancia Neta:</span> <span id="res-ganancia" class="font-bold text-emerald-600">₲ 0</span></div>
+                          <div class="flex justify-between text-lg border-t border-indigo-200 pt-2 mt-2">
+                              <span class="font-bold">PRECIO SUGERIDO:</span> <span id="res-precio" class="font-bold text-indigo-700">₲ 0</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <button onclick="guardarProductoCostos()" id="btn-guardar-prod" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all text-lg flex justify-center items-center gap-2">
+                  👉 Guardar Producto
+              </button>
+          </div>
+      </section>
+
+      <section id="pantalla-presupuesto" class="hidden fade-in bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">📄 Presupuestador de Ventas</h2>
+            <button onclick="mostrarPantalla('menu')" class="text-slate-400 hover:text-slate-600 font-semibold">← Volver</button>
+        </div>
+        <div class="space-y-6">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center mb-3 border-b border-slate-200 pb-2">
+              <h3 class="font-bold text-slate-800">👑 Datos de tu Negocio</h3>
+              <span class="text-[10px] text-emerald-600 font-bold bg-emerald-100 px-2 py-1 rounded hidden" id="badgeGuardado">Guardado</span>
+            </div>
+            <div class="flex items-center gap-4 mb-3">
+              <div class="w-20 h-20 rounded-full border-2 border-slate-300 overflow-hidden flex-shrink-0 bg-white flex items-center justify-center cursor-pointer hover:border-indigo-400 transition-colors" onclick="document.getElementById('logoInput').click()">
+                <img id="logoPreview" src="" style="display:none" class="w-full h-full object-cover">
+                <span id="logoPlaceholder" class="text-2xl text-slate-400">📷</span>
+              </div>
+              <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(this)">
+              <div class="flex-1 space-y-2">
+                <input type="text" id="pNegocio" placeholder="Nombre (Ej. Culinarias)" class="w-full p-2 text-sm border rounded outline-none font-bold focus:ring-1 focus:ring-indigo-500">
+                <input type="tel" id="pTel" placeholder="WhatsApp (Ej. 0981...)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <input type="text" id="pInstagram" placeholder="Instagram (@...)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              <input type="text" id="pCiudad" placeholder="Ciudad (Ej. Asunción)" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <button onclick="guardarPerfil()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 rounded transition-colors uppercase tracking-wider">Guardar Perfil y Logo</button>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">👤 Datos del Cliente</h3>
+            <input type="text" id="nombreCliente" placeholder="Nombre completo del cliente" class="w-full p-2.5 text-sm border rounded focus:ring-1 focus:ring-indigo-500 outline-none mb-3 font-medium">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Fecha de Entrega</label>
+                <input type="date" id="fechaEntrega" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Personas</label>
+                <input type="number" id="cantPersonas" placeholder="Cantidad" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <input type="text" id="notasPedido" placeholder="Notas de entrega (Ej. Entregar en portería, sin TACC...)" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">🛍️ Agregar Productos</h3>
+            <div class="mb-3">
+              <div class="flex justify-between items-end mb-1">
+                <label class="block text-xs text-slate-500 font-bold">Producto / Tabla</label>
+                <button onclick="toggleModoProducto()" id="btnToggleProd" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-1 rounded transition-colors">+ Escribir manual</button>
+              </div>
+              <select id="selProducto" onchange="seleccionarProducto()" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500"></select>
+              <input type="text" id="inpProductoCustom" placeholder="Nombre de la tabla o producto..." class="hidden w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <div class="flex gap-3 mb-4">
+              <div class="w-1/2">
+                <label class="block text-xs text-indigo-500 font-bold mb-1">Precio Unitario (₲)</label>
+                <input type="number" id="inpPrecioVenta" placeholder="Ej. 150000" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-700 focus:ring-1 focus:ring-indigo-500">
+              </div>
+              <div class="w-1/2">
+                <label class="block text-xs text-slate-500 font-bold mb-1">Cantidad</label>
+                <input type="number" id="inpCantidadVenta" placeholder="1" value="1" min="1" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-800 text-center focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <button onclick="agregarAlPresupuesto()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-colors mb-4 shadow-sm flex items-center justify-center gap-2">
+              <span class="text-lg">+</span> Añadir al Presupuesto
+            </button>
+            <ul id="listaCarrito" class="space-y-2 mb-2 max-h-48 overflow-y-auto pr-1"></ul>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">🚚 Delivery y Extras</h3>
+            <div class="flex gap-2 mb-2">
+              <div class="w-2/3">
+                <input type="text" id="inpExtraDesc" placeholder="Ej. Delivery a Luque" list="listaSugerenciasExtras" class="w-full p-2.5 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500">
+                <datalist id="listaSugerenciasExtras">
+                  <option value="Delivery"></option>
+                  <option value="Envío Asunción"></option>
+                  <option value="Caja Especial"></option>
+                </datalist>
+              </div>
+              <div class="w-1/3">
+                <input type="number" id="inpExtraMonto" placeholder="Monto (₲)" class="w-full p-2.5 text-sm border rounded outline-none font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+            <button onclick="agregarExtra()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded text-xs uppercase tracking-wide transition-colors mb-3">+ Añadir Extra</button>
+            <ul id="listaExtras" class="space-y-2 max-h-32 overflow-y-auto pr-1"></ul>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">📋 Condiciones de Venta</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Condiciones</label>
+                <textarea id="txtCondiciones" rows="2" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Validez de 48 hs. Los precios pueden variar según disponibilidad.</textarea>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Forma de Pago</label>
+                <textarea id="txtPago" rows="2" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Seña del 50% para confirmar. Saldo contra entrega.</textarea>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 font-bold mb-1">Incluye</label>
+                <textarea id="txtIncluye" rows="1" class="w-full p-2 text-sm border rounded outline-none focus:ring-1 focus:ring-indigo-500 resize-none">Armado, packaging estándar y presentación.</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-indigo-900 text-white p-5 rounded-xl shadow-lg border border-indigo-950">
+            <div class="flex justify-between items-center border-b border-indigo-700 pb-3 mb-4">
+              <span class="text-sm text-indigo-200 font-medium uppercase tracking-wider">Total a Cobrar</span>
+              <span class="font-black text-3xl text-amber-300" id="resTotal">₲ 0</span>
+            </div>
+            <div class="space-y-3">
+              <button onclick="generarPDF()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-lg shadow-lg transition-colors flex justify-center items-center gap-2 text-base border border-emerald-400">🖨️ Generar PDF y Guardar</button>
+              <button onclick="compartirWhatsApp()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-lg transition-colors text-sm border border-slate-700">📱 Enviar Resumen por WhatsApp</button>
+              <button onclick="limpiarTodo()" class="w-full text-indigo-300 hover:text-white text-xs underline mt-2 py-2">Limpiar Presupuesto</button>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+              <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">📊 Mis Ingresos del Mes</h3>
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                  <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
+                      <span class="block text-xs text-slate-500 uppercase font-bold mb-1">Facturado</span>
+                      <span class="block text-xl font-black text-slate-800" id="statFacturado">₲ 0</span>
+                      <span class="block text-xs text-slate-400 mt-1" id="statCotCount">0 cotizaciones</span>
+                  </div>
+                  <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 text-center">
+                      <span class="block text-xs text-emerald-600 uppercase font-bold mb-1">Ganancia Est.</span>
+                      <span class="block text-xl font-black text-emerald-700" id="statGanancia">₲ 0</span>
+                      <span class="block text-xs text-emerald-500 mt-1" id="statMargen">Margen: N/A</span>
+                  </div>
+              </div>
+              <div class="chart-container mb-4">
+                <canvas id="ingresosChart"></canvas>
+              </div>
+              <div class="mb-3">
+                  <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Últimas Cotizaciones</h4>
+                  <ul id="historialList" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></ul>
+              </div>
+              <div class="flex gap-2 mt-4">
+                  <button onclick="exportarResumenWsp()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition-colors">📱 Exportar Resumen</button>
+                  <button onclick="limpiarHistorial()" class="w-1/3 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold py-2 rounded-lg transition-colors">🗑️ Borrar</button>
+              </div>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('confSheets').classList.toggle('hidden')">
+              <span class="text-xs font-bold text-slate-600">⚙️ Configurar Base de Datos Webhook</span>
+              <span class="text-slate-400">▼</span>
+            </div>
+            <div id="confSheets" class="hidden mt-3 space-y-2">
+              <label class="block text-xs text-slate-500 font-medium">URL del Script:</label>
+              <input type="url" id="inpSheetsURL" placeholder="https://script.google.com/macros/..." class="w-full p-2 text-sm border rounded outline-none" oninput="safeSetLS('CUL_SheetsURL', this.value)">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="printView" class="hidden">
+        <div class="pdf-header">
+          <div>
+            <img id="pdfLogo" src="" class="pdf-logo" style="display:none">
+            <div id="pdfLogoPlaceholder" style="width:80px;height:80px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:30px;border:2px solid #e2e8f0;">👨‍🍳</div>
+          </div>
+          <div class="pdf-biz-info">
+            <h1 class="pdf-title" id="pdfBizName">Culinarias</h1>
+            <div class="pdf-subtitle">Presupuesto de Venta</div>
+            <div style="font-size: 11px; color: #475569; margin-top: 5px;" id="pdfBizContact"></div>
+          </div>
+        </div>
+        <div class="pdf-grid">
+          <div><span class="pdf-label">Cliente</span><span class="pdf-val" id="pdfCliente">—</span></div>
+          <div><span class="pdf-label">Fecha del Presupuesto</span><span class="pdf-val" id="pdfFechaHoy"></span></div>
+          <div><span class="pdf-label">Fecha de Entrega</span><span class="pdf-val" id="pdfEntrega">—</span></div>
+          <div><span class="pdf-label">Personas Estimadas</span><span class="pdf-val" id="pdfPersonas">—</span></div>
+        </div>
+        <div class="pdf-section-title">Detalle del Pedido</div>
+        <table class="pdf-table">
+          <thead><tr><th>Producto / Descripción</th><th class="center">Cant.</th><th class="right">Precio Unit.</th><th class="right">Subtotal</th></tr></thead>
+          <tbody id="pdfTableBody"></tbody>
+        </table>
+        <div class="pdf-totales">
+          <div class="pdf-tot-row"><span style="color:#64748b">Subtotal Productos</span><strong id="pdfSubtotal">₲ 0</strong></div>
+          <div id="pdfExtrasContainer"></div>
+          <div class="pdf-tot-final"><span>TOTAL A PAGAR</span><span id="pdfTotalFinal" style="color:#fde047">₲ 0</span></div>
+        </div>
+        <div class="pdf-condiciones">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div><strong>Condiciones</strong><span id="pdfCond"></span></div>
+            <div><strong>Forma de Pago</strong><span id="pdfPago"></span></div>
+            <div><strong>Incluye</strong><span id="pdfInc"></span></div>
+          </div>
+          <div style="margin-top:10px; border-top: 1px solid #e2e8f0; padding-top:10px; display:none;" id="pdfNotasContainer">
+            <strong>Notas del Pedido:</strong><span id="pdfNotas"></span>
+          </div>
+        </div>
+        <div class="pdf-footer">Documento generado automáticamente · ¡Gracias por elegirnos!</div>
+      </div>
+  </div>
+
+  <script>
+    function safeGetLS(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+    function safeSetLS(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+    function safeRemoveLS(key) { try { localStorage.removeItem(key); } catch(e) {} }
+
+    function descargarArchivo(nombre, contenido) {
+      const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+
+    function descargarBackend() {
+        const code = `function onOpen() {\n  SpreadsheetApp.getUi().createMenu('🧀 Culinarias PRO').addItem('Abrir Sistema Web', 'abrirSistema').addItem('Configurar Base de Datos', 'configurarHojas').addToUi();\n}\n\nfunction abrirSistema() {\n  const html = HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setWidth(900).setHeight(600);\n  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema Culinarias PRO');\n}\n\nfunction doGet() {\n  return HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');\n}\n\nfunction configurarHojas() {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  if (!ss.getSheetByName('PRODUCTOS')) {\n    let hProd = ss.insertSheet('PRODUCTOS');\n    hProd.appendRow(['ID', 'NOMBRE', 'COSTO_TOTAL', 'PRECIO_SUGERIDO', 'MARGEN', 'GANANCIA', 'FECHA']);\n    hProd.getRange("A1:G1").setFontWeight("bold").setBackground("#e0e7ff");\n  }\n  if (!ss.getSheetByName('PRESUPUESTOS')) {\n    let hPres = ss.insertSheet('PRESUPUESTOS');\n    hPres.appendRow(['N° Cotización', 'Fecha Emisión', 'Cliente', 'Fecha de Entrega', 'Detalle de Productos', 'Total a Cobrar', 'Estado']);\n    hPres.getRange("A1:G1").setFontWeight("bold").setBackground("#1e1b4b").setFontColor("#ffffff");\n    hPres.setColumnWidth(3, 200);\n    hPres.setColumnWidth(5, 350);\n  }\n  SpreadsheetApp.getUi().alert('✅ Base de datos configurada correctamente.');\n}\n\nfunction guardarProducto(data) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRODUCTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRODUCTOS'); }\n    const idProducto = 'PROD-' + new Date().getTime();\n    const fecha = new Date().toLocaleDateString('es-PY');\n    hoja.appendRow([idProducto, data.nombre, data.costoTotal, data.precioSugerido, data.margen, data.ganancia, fecha]);\n    return { success: true, message: "Producto guardado." };\n  } catch (error) {\n    return { success: false, message: error.toString() };\n  }\n}\n\nfunction guardarPresupuestoVenta(payload) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRESUPUESTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRESUPUESTOS'); }\n    const fila = hoja.getLastRow();\n    const cotNum = 'CUL-' + String(fila).padStart(3, '0');\n    hoja.appendRow([cotNum, payload.fechaEmision, payload.cliente, payload.fechaEntrega, payload.productos, payload.total, payload.estado]);\n    hoja.getRange("F" + (fila + 1)).setNumberFormat('"₲ "#,##0');\n    return { success: true };\n  } catch (error) {\n    return { success: false, error: error.toString() };\n  }\n}\n\nfunction doPost(e) {\n  try {\n    const payload = JSON.parse(e.postData.contents);\n    if (payload.tipo === 'producto') {\n      guardarProducto(payload);\n    } else {\n      guardarPresupuestoVenta(payload);\n    }\n    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);\n  } catch (error) {\n    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() })).setMimeType(ContentService.MimeType.JSON);\n  }\n}`;
+        descargarArchivo('Codigo.gs', code);
+    }
+
+    function descargarReadme() {
+        const md = `# Sistema de Presupuestos - Culinarias PRO\n\nEste repositorio contiene el código fuente para el Sistema Integral de Culinarias, que incluye una calculadora de costos de ingredientes y un presupuestador automatizado para clientes. Todo está diseñado para funcionar perfectamente dentro del ecosistema de Google Sheets.\n\n## Archivos del Repositorio\n\n1. \`Codigo.gs\`: Es el backend del proyecto. Escrito en Google Apps Script, se encarga de crear la base de datos (Hojas de cálculo) y guardar la información que envía la calculadora de forma segura.\n2. \`Index.html\`: Es el frontend del proyecto. Contiene toda la interfaz visual, el menú de navegación, las validaciones en tiempo real y la función de generación de PDF.\n\n## Guía de Instalación\n\n### Paso 1: Abrir el Editor\n1. Entra a tu cuenta de Google Drive y abre tu archivo de Google Sheets.\n2. En el menú superior, haz clic en Extensiones > Apps Script.\n3. Se abrirá una nueva pestaña con el editor de código.\n\n### Paso 2: Configurar el Backend\n1. En la barra izquierda, selecciona el archivo Codigo.gs.\n2. Borra todo el texto que haya adentro y pega el código del archivo Codigo.gs que descargaste.\n3. Haz clic en el ícono de Guardar.\n\n### Paso 3: Configurar el Frontend\n1. En la barra izquierda de Apps Script, busca el botón de + (Añadir archivo) y elige HTML.\n2. Nómbralo EXACTAMENTE como: Index (con la I mayúscula).\n3. Borra el código por defecto y pega el código de Index.html.\n4. Haz clic en el ícono de Guardar.\n\n### Paso 4: Iniciar y Autorizar\n1. En la parte superior del editor de Apps Script, busca el menú desplegable que dice onOpen.\n2. Cámbialo para que diga configurarHojas.\n3. Haz clic en el botón Ejecutar.\n4. Google te pedirá permisos. Haz clic en Revisar Permisos > Elige tu cuenta > Configuración Avanzada > Ir a proyecto seguro > Permitir.\n\n### Paso 5: Listo para usar\nCierra la pestaña de Apps Script. En tu Google Sheets normal actualiza la página y haz clic en el nuevo menú "🧀 Culinarias PRO".`;
+        descargarArchivo('README.md', md);
+    }
+
+    function mostrarPantalla(id) {
+        document.getElementById('pantalla-menu').classList.add('hidden');
+        document.getElementById('pantalla-producto').classList.add('hidden');
+        document.getElementById('pantalla-presupuesto').classList.add('hidden');
+        document.getElementById('pantalla-descargas').classList.add('hidden');
+        document.getElementById('pantalla-' + id).classList.remove('hidden');
+        if(id === 'producto' && document.getElementById('tabla-ingredientes').children.length === 0) {
+            agregarFilaIngrediente(); 
+            agregarFilaCosto(); 
+        }
+        if(id === 'presupuesto') renderIngresos();
+    }
+
+    function agregarFilaIngrediente() {
+        const tbody = document.getElementById('tabla-ingredientes');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-2"><input type="text" class="w-full p-2 border rounded ing-nombre" placeholder="Ej. Queso Brie"></td>
+            <td class="p-2 w-20"><input type="number" class="w-full p-2 border rounded ing-cant" value="1" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 w-24"><select class="w-full p-2 border rounded ing-unidad"><option>Gr</option><option>Kg</option><option>Unid</option></select></td>
+            <td class="p-2 w-32"><input type="number" class="w-full p-2 border rounded ing-precio" value="0" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 text-right font-medium text-slate-600 ing-subtotal">₲ 0</td>
+            <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calcularTotalesProducto()" class="text-red-500 hover:text-red-700 font-bold">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function agregarFilaCosto() {
+        const tbody = document.getElementById('tabla-costos');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-2 w-32"><select class="w-full p-2 border rounded cos-tipo"><option>Directo</option><option>Indirecto</option></select></td>
+            <td class="p-2"><input type="text" class="w-full p-2 border rounded cos-desc" placeholder="Ej. Bandeja madera"></td>
+            <td class="p-2 w-32"><input type="number" class="w-full p-2 border rounded cos-monto" value="0" min="0" oninput="calcularTotalesProducto()"></td>
+            <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calcularTotalesProducto()" class="text-red-500 hover:text-red-700 font-bold">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcularTotalesProducto() {
+        let costoTotal = 0;
+        document.querySelectorAll('#tabla-ingredientes tr').forEach(tr => {
+            const cant = parseFloat(tr.querySelector('.ing-cant').value) || 0;
+            const precio = parseFloat(tr.querySelector('.ing-precio').value) || 0;
+            const subtotal = cant * precio;
+            tr.querySelector('.ing-subtotal').innerText = formatoMoneda(subtotal);
+            costoTotal += subtotal;
+        });
+        document.querySelectorAll('#tabla-costos tr').forEach(tr => {
+            const monto = parseFloat(tr.querySelector('.cos-monto').value) || 0;
+            costoTotal += monto;
+        });
+        const margen = parseFloat(document.getElementById('prod-margen').value) || 0;
+        const precioSugerido = costoTotal * (1 + (margen / 100));
+        const gananciaNeta = precioSugerido - costoTotal;
+
+        document.getElementById('res-costo').innerText = formatoMoneda(costoTotal);
+        document.getElementById('res-ganancia').innerText = formatoMoneda(gananciaNeta);
+        document.getElementById('res-precio').innerText = formatoMoneda(precioSugerido);
+    }
+
+    function guardarProductoCostos() {
+        const btn = document.getElementById('btn-guardar-prod');
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '⏳ Guardando...';
+        btn.disabled = true;
+
+        const nombre = document.getElementById('prod-nombre').value;
+        if(!nombre) {
+            mostrarNotificacion('Por favor, ingresa el nombre del producto');
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+            return;
+        }
+
+        const ingredientes = [];
+        document.querySelectorAll('#tabla-ingredientes tr').forEach(tr => {
+            const nom = tr.querySelector('.ing-nombre').value;
+            if(nom) ingredientes.push({ nombre: nom, cantidad: parseFloat(tr.querySelector('.ing-cant').value) || 0, unidad: tr.querySelector('.ing-unidad').value, precio: parseFloat(tr.querySelector('.ing-precio').value) || 0, subtotal: parseFloat(tr.querySelector('.ing-subtotal').innerText.replace(/[^\d]/g, '')) });
+        });
+
+        const costos = [];
+        document.querySelectorAll('#tabla-costos tr').forEach(tr => {
+            const desc = tr.querySelector('.cos-desc').value;
+            if(desc) costos.push({ tipo: tr.querySelector('.cos-tipo').value, descripcion: desc, monto: parseFloat(tr.querySelector('.cos-monto').value) || 0 });
+        });
+
+        const data = { tipo: 'producto', nombre: nombre, ingredientes: ingredientes, costos: costos, margen: document.getElementById('prod-margen').value, costoTotal: parseFloat(document.getElementById('res-costo').innerText.replace(/[^\d]/g, '')), ganancia: parseFloat(document.getElementById('res-ganancia').innerText.replace(/[^\d]/g, '')), precioSugerido: parseFloat(document.getElementById('res-precio').innerText.replace(/[^\d]/g, '')) };
+
+        if(typeof google !== 'undefined') {
+            google.script.run.withSuccessHandler(function(response) {
+                if(response.success) { mostrarNotificacion('✅ ' + response.message); document.getElementById('prod-nombre').value = ''; document.getElementById('tabla-ingredientes').innerHTML = ''; document.getElementById('tabla-costos').innerHTML = ''; mostrarPantalla('menu'); } 
+                else { mostrarNotificacion('❌ Error: ' + response.message); }
+                btn.innerHTML = textoOriginal; btn.disabled = false;
+            }).guardarProducto(data);
+        } else {
+            setTimeout(() => {
+                mostrarNotificacion('✅ Producto guardado (Modo Local)'); 
+                btn.innerHTML = textoOriginal; btn.disabled = false;
+            }, 1000);
+        }
+    }
+
+    let logoBase64 = '';
+    let carritoProductos = [];
+    let carritoExtras = [];
+    let modoCustom = false;
+    let ingresosChart = null;
+
+    const PRODUCTOS_BASE = [
+      { nombre: 'Tabla Individual (1 pers)', precio: 80000 },
+      { nombre: 'Tabla Petite (2 pers)', precio: 150000 },
+      { nombre: 'Tabla Medium (4-5 pers)', precio: 280000 },
+      { nombre: 'Tabla Grand (8-10 pers)', precio: 450000 },
+      { nombre: 'Tabla Gourmet', precio: 350000 },
+      { nombre: 'Tabla Premium', precio: 500000 },
+      { nombre: 'Caja Dulce / Postre', precio: 120000 }
+    ];
+
+    window.onload = function() {
+      document.getElementById('fechaEntrega').value = new Date().toISOString().split('T')[0];
+      const select = document.getElementById('selProducto');
+      select.innerHTML = '<option value="">Selecciona una tabla...</option>';
+      PRODUCTOS_BASE.forEach((prod, i) => { select.innerHTML += `<option value="${i}">${prod.nombre} - ${formatoMoneda(prod.precio)}</option>`; });
+      cargarPerfil();
+      document.getElementById('inpSheetsURL').value = safeGetLS('CUL_SheetsURL') || '';
+    };
+
+    function handleLogoUpload(input) {
+      const file = input.files[0]; 
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => { 
+        logoBase64 = e.target.result; 
+        document.getElementById('logoPreview').src = logoBase64;
+        document.getElementById('logoPreview').style.display = 'block';
+        document.getElementById('logoPlaceholder').style.display = 'none';
+        document.getElementById('pdfLogo').src = logoBase64;
+        document.getElementById('pdfLogo').style.display = 'block';
+        document.getElementById('pdfLogoPlaceholder').style.display = 'none';
+        guardarPerfil();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function guardarPerfil() {
+      const perfil = {
+        negocio: document.getElementById('pNegocio').value.trim(),
+        tel: document.getElementById('pTel').value.trim(),
+        instagram: document.getElementById('pInstagram').value.trim(),
+        ciudad: document.getElementById('pCiudad').value.trim(),
+        logo: logoBase64
+      };
+      safeSetLS('CUL_PerfilVendedor', JSON.stringify(perfil));
+      const badge = document.getElementById('badgeGuardado');
+      badge.classList.remove('hidden');
+      setTimeout(() => badge.classList.add('hidden'), 2000);
+    }
+
+    function cargarPerfil() {
+      const raw = safeGetLS('CUL_PerfilVendedor');
+      if (raw) {
+        const p = JSON.parse(raw);
+        document.getElementById('pNegocio').value = p.negocio || '';
+        document.getElementById('pTel').value = p.tel || '';
+        document.getElementById('pInstagram').value = p.instagram || '';
+        document.getElementById('pCiudad').value = p.ciudad || '';
+        if (p.logo) {
+          logoBase64 = p.logo;
+          document.getElementById('logoPreview').src = logoBase64;
+          document.getElementById('logoPreview').style.display = 'block';
+          document.getElementById('logoPlaceholder').style.display = 'none';
+          document.getElementById('pdfLogo').src = logoBase64;
+          document.getElementById('pdfLogo').style.display = 'block';
+          document.getElementById('pdfLogoPlaceholder').style.display = 'none';
+        }
+      }
+    }
+
+    function toggleModoProducto() {
+      modoCustom = !modoCustom;
+      const sel = document.getElementById('selProducto');
+      const inp = document.getElementById('inpProductoCustom');
+      const btn = document.getElementById('btnToggleProd');
+
+      if (modoCustom) {
+        sel.classList.add('hidden');
+        inp.classList.remove('hidden');
+        btn.innerText = "📋 Ver Catálogo";
+        document.getElementById('inpPrecioVenta').value = "";
+        inp.focus();
+      } else {
+        sel.classList.remove('hidden');
+        inp.classList.add('hidden');
+        btn.innerText = "+ Escribir manual";
+        seleccionarProducto();
+      }
+    }
+
+    function seleccionarProducto() {
+      const idx = document.getElementById('selProducto').value;
+      if (idx !== "") {
+        document.getElementById('inpPrecioVenta').value = PRODUCTOS_BASE[idx].precio;
+        document.getElementById('inpCantidadVenta').focus();
+      } else {
+        document.getElementById('inpPrecioVenta').value = "";
+      }
+    }
+
+    function agregarAlPresupuesto() {
+      let nombre = "";
+      if (modoCustom) {
+        nombre = document.getElementById('inpProductoCustom').value.trim();
+        if (!nombre) return mostrarNotificacion('Escribe el nombre del producto.');
+      } else {
+        const idx = document.getElementById('selProducto').value;
+        if (idx === "") return mostrarNotificacion('Selecciona un producto.');
+        nombre = PRODUCTOS_BASE[idx].nombre;
+      }
+
+      const precio = parseFloat(document.getElementById('inpPrecioVenta').value);
+      const cantidad = parseInt(document.getElementById('inpCantidadVenta').value);
+
+      if (isNaN(precio) || precio < 0 || isNaN(cantidad) || cantidad <= 0) return mostrarNotificacion('Precio o cantidad inválida.');
+
+      carritoProductos.push({ nombre, precio, cantidad, subtotal: precio * cantidad });
+
+      if (modoCustom) {
+        document.getElementById('inpProductoCustom').value = "";
+        document.getElementById('inpPrecioVenta').value = "";
+      } else {
+        document.getElementById('selProducto').value = "";
+        document.getElementById('inpPrecioVenta').value = "";
+      }
+      document.getElementById('inpCantidadVenta').value = 1;
+      actualizarListasUI();
+    }
+
+    function eliminarProducto(index) {
+      carritoProductos.splice(index, 1);
+      actualizarListasUI();
+    }
+
+    function agregarExtra() {
+      const desc = document.getElementById('inpExtraDesc').value.trim();
+      const monto = parseFloat(document.getElementById('inpExtraMonto').value);
+
+      if (!desc || isNaN(monto) || monto < 0) return mostrarNotificacion('Extra inválido.');
+      carritoExtras.push({ descripcion: desc, monto: monto });
+      document.getElementById('inpExtraDesc').value = "";
+      document.getElementById('inpExtraMonto').value = "";
+      actualizarListasUI();
+    }
+
+    function eliminarExtra(index) {
+      carritoExtras.splice(index, 1);
+      actualizarListasUI();
+    }
+
+    function actualizarListasUI() {
+      const ulProd = document.getElementById('listaCarrito');
+      ulProd.innerHTML = '';
+      let subtotalProd = 0;
+      carritoProductos.forEach((p, i) => {
+        subtotalProd += p.subtotal;
+        ulProd.innerHTML += `
+          <li class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <div class="flex flex-col">
+              <span class="font-bold text-slate-800">${p.nombre}</span>
+              <span class="text-slate-500">${p.cantidad} un. x ${formatoMoneda(p.precio)}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-indigo-700">${formatoMoneda(p.subtotal)}</span>
+              <button onclick="eliminarProducto(${i})" class="text-red-400 font-bold hover:bg-red-100 w-5 h-5 rounded-full flex items-center justify-center">✕</button>
+            </div>
+          </li>`;
+      });
+
+      const ulExt = document.getElementById('listaExtras');
+      ulExt.innerHTML = '';
+      let totalExt = 0;
+      carritoExtras.forEach((e, i) => {
+        totalExt += e.monto;
+        ulExt.innerHTML += `
+          <li class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <span class="font-semibold text-slate-700">${e.descripcion}</span>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-slate-700">${formatoMoneda(e.monto)}</span>
+              <button onclick="eliminarExtra(${i})" class="text-red-400 font-bold hover:bg-red-100 w-5 h-5 rounded-full flex items-center justify-center">✕</button>
+            </div>
+          </li>`;
+      });
+
+      document.getElementById('resTotal').innerText = formatoMoneda(subtotalProd + totalExt);
+    }
+
+    function getHistorial() { try { return JSON.parse(safeGetLS('CUL_Historial') || '[]'); } catch(e) { return []; } }
+    function guardarEnHistorial(entry) { const h = getHistorial(); h.unshift(entry); if (h.length > 100) h.length = 100; safeSetLS('CUL_Historial', JSON.stringify(h)); }
+    function limpiarHistorial() {
+      if (!confirm('¿Borrar historial de ingresos locales?')) return;
+      safeRemoveLS('CUL_Historial'); renderIngresos(); mostrarNotificacion('Historial borrado.');
+    }
+
+    function renderIngresos() {
+      const elFacturado = document.getElementById('statFacturado');
+      if (!elFacturado) return; 
+
+      const h = getHistorial();
+      const ahora = new Date();
+      const mesActual = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0');
+
+      let facturadoMes = 0, cotMes = 0, gananciaMes = 0;
+      h.forEach(e => {
+        if (e.fechaGenerado && e.fechaGenerado.startsWith(mesActual)) { 
+            facturadoMes += e.totalVenta || 0; 
+            gananciaMes += (e.totalVenta * 0.3) || 0; 
+            cotMes++; 
+        }
+      });
+
+      elFacturado.textContent = formatoMoneda(facturadoMes);
+      document.getElementById('statCotCount').textContent  = cotMes + (cotMes === 1 ? ' cotización' : ' cotizaciones');
+      document.getElementById('statGanancia').textContent  = formatoMoneda(gananciaMes);
+      document.getElementById('statMargen').textContent  = 'Margen Est.: 30%';
+      
+      const ctx = document.getElementById('ingresosChart');
+      if(ctx) {
+        if(ingresosChart) ingresosChart.destroy();
+        ingresosChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Costos', 'Ganancia'],
+                datasets: [{
+                    data: [facturadoMes - gananciaMes, gananciaMes],
+                    backgroundColor: ['#cbd5e1', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter' } } } }
+            }
+        });
+      }
+
+      const listEl = document.getElementById('historialList');
+      if (listEl) {
+          const ultimos = h.slice(0, 10);
+          if (ultimos.length === 0) {
+            listEl.innerHTML = '<div class="text-[10px] text-slate-400 text-center py-2">Aún no hay cotizaciones en este dispositivo.</div>';
+          } else {
+            listEl.innerHTML = ultimos.map(e => {
+              const fecha = e.fechaGenerado ? e.fechaGenerado.split('T')[0] : '—';
+              return `<li class="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs border border-slate-100">
+                  <div class="flex flex-col"><span class="font-bold text-slate-700">${e.cotNum}</span> <span class="text-[10px] text-slate-500 truncate w-32">${e.cliente || '—'}</span></div>
+                  <div class="font-black text-emerald-600">${formatoMoneda(e.totalVenta || 0)}</div>
+              </li>`;
+            }).join('');
+          }
+      }
+    }
+
+    async function generarPDF() {
+      if (carritoProductos.length === 0) return mostrarNotificacion('Agrega un producto primero.');
+
+      const cliente = document.getElementById('nombreCliente').value.trim() || 'Cliente';
+      const fHoy = new Date().toLocaleDateString('es-PY');
+      const fEntRaw = document.getElementById('fechaEntrega').value;
+      const fEnt = fEntRaw ? new Date(fEntRaw + 'T12:00:00').toLocaleDateString('es-PY') : 'No definida';
+      const personas = document.getElementById('cantPersonas').value || '—';
+      const notas = document.getElementById('notasPedido').value.trim();
+
+      document.getElementById('pdfBizName').innerText = document.getElementById('pNegocio').value || 'Culinarias';
+      
+      const arrContacto = [];
+      if(document.getElementById('pTel').value) arrContacto.push('📱 ' + document.getElementById('pTel').value);
+      if(document.getElementById('pInstagram').value) arrContacto.push('📷 ' + document.getElementById('pInstagram').value);
+      if(document.getElementById('pCiudad').value) arrContacto.push('📍 ' + document.getElementById('pCiudad').value);
+      document.getElementById('pdfBizContact').innerHTML = arrContacto.join(' &nbsp;|&nbsp; ');
+
+      document.getElementById('pdfCliente').innerText = cliente;
+      document.getElementById('pdfFechaHoy').innerText = fHoy;
+      document.getElementById('pdfEntrega').innerText = fEnt;
+      document.getElementById('pdfPersonas').innerText = personas;
+
+      let subtotal = 0;
+      let filasHtml = '';
+      carritoProductos.forEach(p => {
+        subtotal += p.subtotal;
+        filasHtml += `<tr><td><strong>${p.nombre}</strong></td><td class="center">${p.cantidad}</td><td class="right">${formatoMoneda(p.precio)}</td><td class="right"><strong>${formatoMoneda(p.subtotal)}</strong></td></tr>`;
+      });
+      document.getElementById('pdfTableBody').innerHTML = filasHtml;
+      document.getElementById('pdfSubtotal').innerText = formatoMoneda(subtotal);
+
+      let htmlExtras = '';
+      let totExt = 0;
+      carritoExtras.forEach(e => {
+        totExt += e.monto;
+        htmlExtras += `<div class="pdf-tot-row"><span style="color:#64748b">${e.descripcion}</span><span>${formatoMoneda(e.monto)}</span></div>`;
+      });
+      document.getElementById('pdfExtrasContainer').innerHTML = htmlExtras;
+      
+      const granTotal = subtotal + totExt;
+      document.getElementById('pdfTotalFinal').innerText = formatoMoneda(granTotal);
+
+      document.getElementById('pdfCond').innerText = document.getElementById('txtCondiciones').value;
+      document.getElementById('pdfPago').innerText = document.getElementById('txtPago').value;
+      document.getElementById('pdfInc').innerText = document.getElementById('txtIncluye').value;
+
+      if(notas) {
+        document.getElementById('pdfNotasContainer').style.display = 'block';
+        document.getElementById('pdfNotas').innerText = notas;
+      } else {
+        document.getElementById('pdfNotasContainer').style.display = 'none';
+      }
+
+      const cotNum = 'CUL-' + String(parseInt(safeGetLS('CUL_NumSec') || '0') + 1).padStart(3, '0');
+      safeSetLS('CUL_NumSec', String(parseInt(safeGetLS('CUL_NumSec') || '0') + 1));
+      
+      guardarEnGoogleSheets(cotNum, cliente, fEnt, granTotal);
+      guardarEnHistorial({ cotNum, cliente, fechaGenerado: new Date().toISOString(), totalVenta: granTotal });
+      renderIngresos();
+
+      setTimeout(() => { window.print(); }, 500);
+    }
+
+    function guardarEnGoogleSheets(cotNum, cliente, fechaEntrega, total) {
+      const payload = {
+        tipo: 'venta',
+        cotNum: cotNum,
+        fechaEmision: new Date().toLocaleDateString('es-PY'),
+        cliente: cliente,
+        fechaEntrega: fechaEntrega,
+        productos: carritoProductos.map(p => `${p.cantidad}x ${p.nombre}`).join(' | '),
+        total: total,
+        estado: 'Presupuestado'
+      };
+
+      if (typeof google !== 'undefined') {
+        google.script.run.guardarPresupuestoVenta(payload);
+      } else {
+        const webhookURL = document.getElementById('inpSheetsURL').value;
+        if (webhookURL) {
+          fetch(webhookURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).catch(e => console.log(e));
+        }
+      }
+    }
+
+    function compartirWhatsApp() {
+      if (carritoProductos.length === 0) return mostrarNotificacion('Presupuesto vacío.');
+      const negocio = document.getElementById('pNegocio').value || 'Culinarias';
+      const cliente = document.getElementById('nombreCliente').value || 'Cliente';
+      
+      let mensaje = `Hola *${cliente}*, aquí tienes tu presupuesto de *${negocio}*:\n\n`;
+      let total = 0;
+      carritoProductos.forEach(p => { total += p.subtotal; mensaje += `🔸 ${p.cantidad}x ${p.nombre} -> ${formatoMoneda(p.subtotal)}\n`; });
+      if (carritoExtras.length > 0) {
+        mensaje += `\n*Extras:*\n`;
+        carritoExtras.forEach(e => { total += e.monto; mensaje += `🔹 ${e.descripcion} -> ${formatoMoneda(e.monto)}\n`; });
+      }
+      mensaje += `\n💰 *TOTAL: ${formatoMoneda(total)}*\n\n`;
+      mensaje += `*Forma de Pago:* ${document.getElementById('txtPago').value}\n`;
+      mensaje += `*Condiciones:* ${document.getElementById('txtCondiciones').value}\n`;
+      
+      window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
+
+    function exportarResumenWsp() {
+        const h = getHistorial(); 
+        const ahora = new Date(); 
+        const mesActual = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0'); 
+        const nombreMes = ahora.toLocaleDateString('es-PY', { month: 'long', year: 'numeric' });
+        
+        const delMes = h.filter(e => e.fechaGenerado && e.fechaGenerado.startsWith(mesActual)); 
+        const facturado = delMes.reduce((s, e) => s + (e.totalVenta || 0), 0); 
+        const p = getPerfil();
+        
+        const lines = []; 
+        lines.push(`🍽️ *RESUMEN DE VENTAS — ${nombreMes.toUpperCase()}*`); 
+        if (p.negocio) lines.push(`✨ ${p.negocio}`); 
+        lines.push('');
+        lines.push(`📋 *Cotizaciones:* ${delMes.length}`); 
+        lines.push(`💰 *Total Presupuestado:* ${formatoMoneda(facturado)}`); 
+        lines.push('');
+        if (delMes.length > 0) { 
+            lines.push('*Detalle de Cotizaciones:*'); 
+            delMes.forEach(e => lines.push(`  • ${e.cotNum} · ${e.cliente || '—'} → ${formatoMoneda(e.totalVenta)}`)); 
+            lines.push(''); 
+        }
+        window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    }
+
+    function limpiarTodo() {
+      if(!confirm('¿Borrar todo el presupuesto actual?')) return;
+      carritoProductos = []; carritoExtras = [];
+      document.getElementById('nombreCliente').value = ""; document.getElementById('cantPersonas').value = ""; document.getElementById('notasPedido').value = "";
+      actualizarListasUI();
+    }
+
+    function formatoMoneda(valor) { return '₲ ' + Math.round(valor).toLocaleString('es-ES'); }
+    function mostrarNotificacion(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.remove('hidden'); t.style.opacity = '1';
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.classList.add('hidden'), 300); }, 3000);
+    }
+  </script>
+</body>
+</html>
