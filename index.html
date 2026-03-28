@@ -1,3 +1,5 @@
+<!-- Chosen Palette: Slate, Indigo, Emerald, Amber -->
+<!-- Application Structure Plan: Single-page application acting as a budgeting tool for a catering business. Includes profile management, product creation, budget generation, and local state management for offline preview. Features a dedicated download section to retrieve the backend and documentation files. Includes a chart for financial overview. -->
 <!-- Visualization & Content Choices: Interactive forms for budget input, dynamic receipt generation, printable PDF view. Chart.js doughnut chart for profit vs cost visualization. Vanilla JS for state, Tailwind for styling. No SVG or Mermaid used. -->
 <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 <!DOCTYPE html>
@@ -389,7 +391,7 @@
     }
 
     function descargarBackend() {
-        const code = `function onOpen() {\n  SpreadsheetApp.getUi().createMenu('🧀 Culinarias PRO').addItem('Abrir Sistema Web', 'abrirSistema').addItem('Configurar Base de Datos', 'configurarHojas').addToUi();\n}\n\nfunction abrirSistema() {\n  const html = HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setWidth(900).setHeight(600);\n  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema Culinarias PRO');\n}\n\nfunction doGet() {\n  return HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');\n}\n\nfunction configurarHojas() {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  if (!ss.getSheetByName('PRODUCTOS')) {\n    let hProd = ss.insertSheet('PRODUCTOS');\n    hProd.appendRow(['ID', 'NOMBRE', 'COSTO_TOTAL', 'PRECIO_SUGERIDO', 'MARGEN', 'GANANCIA', 'FECHA']);\n    hProd.getRange("A1:G1").setFontWeight("bold").setBackground("#e0e7ff");\n  }\n  if (!ss.getSheetByName('PRESUPUESTOS')) {\n    let hPres = ss.insertSheet('PRESUPUESTOS');\n    hPres.appendRow(['N° Cotización', 'Fecha Emisión', 'Cliente', 'Fecha de Entrega', 'Detalle de Productos', 'Total a Cobrar', 'Estado']);\n    hPres.getRange("A1:G1").setFontWeight("bold").setBackground("#1e1b4b").setFontColor("#ffffff");\n    hPres.setColumnWidth(3, 200);\n    hPres.setColumnWidth(5, 350);\n  }\n  SpreadsheetApp.getUi().alert('✅ Base de datos configurada correctamente.');\n}\n\nfunction guardarProducto(data) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRODUCTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRODUCTOS'); }\n    const idProducto = 'PROD-' + new Date().getTime();\n    const fecha = new Date().toLocaleDateString('es-PY');\n    hoja.appendRow([idProducto, data.nombre, data.costoTotal, data.precioSugerido, data.margen, data.ganancia, fecha]);\n    return { success: true, message: "Producto guardado." };\n  } catch (error) {\n    return { success: false, message: error.toString() };\n  }\n}\n\nfunction guardarPresupuestoVenta(payload) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRESUPUESTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRESUPUESTOS'); }\n    const fila = hoja.getLastRow();\n    const cotNum = 'CUL-' + String(fila).padStart(3, '0');\n    hoja.appendRow([cotNum, payload.fechaEmision, payload.cliente, payload.fechaEntrega, payload.productos, payload.total, payload.estado]);\n    hoja.getRange("F" + (fila + 1)).setNumberFormat('"₲ "#,##0');\n    return { success: true };\n  } catch (error) {\n    return { success: false, error: error.toString() };\n  }\n}\n\nfunction doPost(e) {\n  try {\n    const payload = JSON.parse(e.postData.contents);\n    if (payload.tipo === 'producto') {\n      guardarProducto(payload);\n    } else {\n      guardarPresupuestoVenta(payload);\n    }\n    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);\n  } catch (error) {\n    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() })).setMimeType(ContentService.MimeType.JSON);\n  }\n}`;
+        const code = `function onOpen() {\n  SpreadsheetApp.getUi().createMenu('🧀 Culinarias PRO').addItem('Abrir Sistema Web', 'abrirSistema').addItem('Configurar Base de Datos', 'configurarHojas').addToUi();\n}\n\nfunction abrirSistema() {\n  const html = HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setWidth(900).setHeight(600);\n  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema Culinarias PRO');\n}\n\nfunction doGet() {\n  return HtmlService.createHtmlOutputFromFile('Index').setTitle('Sistema Culinarias PRO').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');\n}\n\nfunction configurarHojas() {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  if (!ss.getSheetByName('PRODUCTOS')) {\n    let hProd = ss.insertSheet('PRODUCTOS');\n    hProd.appendRow(['ID', 'NOMBRE', 'COSTO_TOTAL', 'PRECIO_SUGERIDO', 'MARGEN', 'GANANCIA', 'FECHA']);\n    hProd.getRange("A1:G1").setFontWeight("bold").setBackground("#e0e7ff");\n  }\n  if (!ss.getSheetByName('PRESUPUESTOS')) {\n    let hPres = ss.insertSheet('PRESUPUESTOS');\n    hPres.appendRow(['N° Cotización', 'Fecha Emisión', 'Cliente', 'Fecha de Entrega', 'Detalle de Productos', 'Total a Cobrar', 'Estado']);\n    hPres.getRange("A1:G1").setFontWeight("bold").setBackground("#1e1b4b").setFontColor("#ffffff");\n    hPres.setColumnWidth(3, 200);\n    hPres.setColumnWidth(5, 350);\n  }\n  SpreadsheetApp.getUi().alert('✅ Base de datos configurada correctamente.');\n}\n\nfunction guardarProducto(data) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRODUCTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRODUCTOS'); }\n    const idProducto = 'PROD-' + new Date().getTime();\n    const fecha = new Date().toLocaleDateString('es-PY');\n    hoja.appendRow([idProducto, data.nombre, data.costoTotal, data.precioSugerido, data.margen, data.ganancia, fecha]);\n    return { success: true, message: "Producto guardado." };\n  } catch (error) {\n    return { success: false, message: error.toString() };\n  }\n}\n\nfunction guardarPresupuestoVenta(payload) {\n  try {\n    const ss = SpreadsheetApp.getActiveSpreadsheet();\n    let hoja = ss.getSheetByName('PRESUPUESTOS');\n    if (!hoja) { configurarHojas(); hoja = ss.getSheetByName('PRESUPUESTOS'); }\n    const fila = hoja.getLastRow();\n    const cotNum = 'CUL-' + String(fila).padStart(3, '0');\n    hoja.appendRow([cotNum, payload.fechaEmision, payload.cliente, payload.fechaEntrega, payload.productos, payload.total, payload.estado]);\n    hoja.getRange("F" + (fila + 1)).setNumberFormat('"₲ "#,##0');\n    return { success: true };\n  } catch (error) {\n    return { success: false, error: error.toString() };\n  }\n}\n\nfunction doPost(e) {\n  try {\n    const payload = JSON.parse(e.postData.contents);\n    if (payload.tipo === 'producto') {\n      guardarProducto(payload);\n    } else {\n      guardarPresupuestoVenta(payload);\n    }\n    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);\n  } catch (error) {\n    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() })).setMimeType(ContentService.MimeType.JSON);\n  }\n}\n\nfunction getProductos() {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  const hoja = ss.getSheetByName('PRODUCTOS');\n  if (!hoja) return [];\n  const data = hoja.getDataRange().getValues();\n  const productos = [];\n  for (let i = 1; i < data.length; i++) {\n    const fila = data[i];\n    if (fila[1]) {\n      productos.push({\n        nombre: fila[1],\n        precio: parseFloat(fila[3]) || 0\n      });\n    }\n  }\n  return productos;\n}`;
         descargarArchivo('Codigo.gs', code);
     }
 
@@ -507,24 +509,41 @@
     let modoCustom = false;
     let ingresosChart = null;
 
-    const PRODUCTOS_BASE = [
-      { nombre: 'Tabla Individual (1 pers)', precio: 80000 },
-      { nombre: 'Tabla Petite (2 pers)', precio: 150000 },
-      { nombre: 'Tabla Medium (4-5 pers)', precio: 280000 },
-      { nombre: 'Tabla Grand (8-10 pers)', precio: 450000 },
-      { nombre: 'Tabla Gourmet', precio: 350000 },
-      { nombre: 'Tabla Premium', precio: 500000 },
-      { nombre: 'Caja Dulce / Postre', precio: 120000 }
-    ];
+    let PRODUCTOS_BASE = [];
 
     window.onload = function() {
       document.getElementById('fechaEntrega').value = new Date().toISOString().split('T')[0];
-      const select = document.getElementById('selProducto');
-      select.innerHTML = '<option value="">Selecciona una tabla...</option>';
-      PRODUCTOS_BASE.forEach((prod, i) => { select.innerHTML += `<option value="${i}">${prod.nombre} - ${formatoMoneda(prod.precio)}</option>`; });
       cargarPerfil();
       document.getElementById('inpSheetsURL').value = safeGetLS('CUL_SheetsURL') || '';
+      cargarProductosDesdeSheets();
     };
+
+    function cargarProductosDesdeSheets() {
+      const select = document.getElementById('selProducto');
+      select.innerHTML = '<option value="">⏳ Cargando catálogo...</option>';
+
+      if (typeof google !== 'undefined') {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            PRODUCTOS_BASE = data;
+            select.innerHTML = '<option value="">Selecciona una tabla...</option>';
+            if (PRODUCTOS_BASE.length === 0) {
+              select.innerHTML = '<option value="">No hay productos en tu base de datos</option>';
+            } else {
+              PRODUCTOS_BASE.forEach((prod, i) => {
+                select.innerHTML += `<option value="${i}">${prod.nombre} - ${formatoMoneda(prod.precio)}</option>`;
+              });
+            }
+          })
+          .withFailureHandler(function(error) {
+            select.innerHTML = '<option value="">❌ Error al cargar base de datos</option>';
+            console.error(error);
+          })
+          .getProductos();
+      } else {
+        select.innerHTML = '<option value="">⚠️ Sin conexión a Sheets (Modo local)</option>';
+      }
+    }
 
     function handleLogoUpload(input) {
       const file = input.files[0]; 
